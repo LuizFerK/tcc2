@@ -45,12 +45,12 @@
 
               # 2. Compile TSBS Submodule
               if [ -d "questdb-tsbs" ]; then
-                if [ ! -f "questdb-tsbs/.nix-built" ]; then
+                if [ ! -f ".nix-built-tsbs" ]; then
                   echo "[+] Compiling QuestDB TSBS submodule..."
                   cd questdb-tsbs
                   make all
-                  touch .nix-built
                   cd $ROOT_DIR
+                  touch .nix-built-tsbs
                 else
                   echo "[+] TSBS submodule is already compiled."
                 fi
@@ -61,7 +61,7 @@
 
               # 3. Compile IoT-Benchmark Submodule
               if [ -d "iot-benchmark" ]; then
-                if [ ! -f "iot-benchmark/.nix-built" ]; then
+                if [ ! -f ".nix-built-iot-benchmark" ]; then
                   echo "[+] Compiling IoT-Benchmark submodule (Targeted build)..."
                   cd iot-benchmark
                   
@@ -78,12 +78,12 @@
                     sed -i 's|#!/bin/bash|#!/usr/bin/env bash|g' benchmark.sh bin/*.sh
                     
                     cd $ROOT_DIR/iot-benchmark
-                    touch .nix-built
                     echo "[+] IoT-Benchmark successfully built and patched."
                   else
                     echo "[-] Build failed: Could not find compiled benchmark.sh."
                   fi
                   cd $ROOT_DIR
+                  touch .nix-built-iot-benchmark
                 else
                   echo "[+] IoT-Benchmark submodule is already compiled."
                 fi
