@@ -26,6 +26,7 @@
               docker-compose
               gnused
               findutils
+              python3
             ];
 
             shellHook = ''
