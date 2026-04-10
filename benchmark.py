@@ -2,7 +2,7 @@
 import sys
 import argparse
 from benchrunner.config import CONFIG
-from benchrunner import influxdb, timescaledb, iotdb
+from benchrunner import influxdb, timescaledb, iotdb, metrics
 
 def main():
     parser = argparse.ArgumentParser(description="Time-Series Database Benchmark Runner")
@@ -44,6 +44,8 @@ def main():
             except Exception as e:
                 print(f"[!] Benchmark failed for {db} ({t}): {e}")
                 sys.exit(1)
+                
+    metrics.print_summary()
 
 if __name__ == "__main__":
     main()

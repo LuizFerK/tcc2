@@ -39,6 +39,8 @@ def update_config(work_mode):
         f.write(content)
     return True
 
+from benchrunner import metrics
+
 def run(work_mode):
     if not update_config(work_mode):
         return
@@ -46,5 +48,6 @@ def run(work_mode):
     cwd = "iot-benchmark/iotdb-1.3/target/iot-benchmark-iotdb-1.3/iot-benchmark-iotdb-1.3"
     print(f"[*] Running IoT-Benchmark for Apache IoTDB ({work_mode})...")
     
-    cmd = ["./benchmark.sh"]
-    subprocess.run(cmd, cwd=cwd, check=True)
+    cmd = "./benchmark.sh"
+    test_type = "write" if work_mode == "insertTest" else "read"
+    metrics.run_and_capture("iotdb", test_type, cmd, cwd=cwd)

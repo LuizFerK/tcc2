@@ -8,7 +8,7 @@ def write():
         f"--user={CONFIG['timescale_user']}",
         f"--pass={CONFIG['timescale_pass']}"
     ]
-    tsbs.load("timescaledb", "tsbs_load_timescaledb", extra_args)
+    tsbs.load("timescaledb", "timescaledb", "tsbs_load_timescaledb", extra_args)
 
 def read():
     extra_args = [
@@ -17,4 +17,4 @@ def read():
         f"--user={CONFIG['timescale_user']}",
         f"--pass={CONFIG['timescale_pass']}"
     ]
-    tsbs.run_queries("timescaledb", "tsbs_run_queries_timescaledb", extra_args)
+    tsbs.run_queries("timescaledb", "timescaledb", "tsbs_run_queries_timescaledb", extra_args)

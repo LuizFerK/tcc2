@@ -46,11 +46,11 @@ def write():
         f"--urls={CONFIG['influx_urls']}",
         f"--auth-token={CONFIG['influx_token']}"
     ]
-    tsbs.load("influx", "tsbs_load_influx", extra_args)
+    tsbs.load("influxdb", "influx", "tsbs_load_influx", extra_args)
 
 def read():
     extra_args = [
         f"--urls={CONFIG['influx_urls']}",
         f"--auth-token={CONFIG['influx_token']}"
     ]
-    tsbs.run_queries("influx", "tsbs_run_queries_influx", extra_args)
+    tsbs.run_queries("influxdb", "influx", "tsbs_run_queries_influx", extra_args)

@@ -1,6 +1,7 @@
 import os
 import subprocess
 from benchrunner.config import CONFIG
+from benchrunner import metrics
 
 def generate_data(fmt):
     out_file = f"/tmp/{fmt}-data.gz"
@@ -18,7 +19,7 @@ def generate_data(fmt):
     subprocess.run(cmd, shell=True, check=True)
     return out_file
 
-def load(fmt, load_cmd, extra_args):
+def load(db_name, fmt, load_cmd, extra_args):
     data_file = f"/tmp/{fmt}-data.gz"
     if not os.path.exists(data_file):
         print(f"[!] Data file {data_file} not found. Generating first...")
@@ -26,7 +27,7 @@ def load(fmt, load_cmd, extra_args):
         
     print(f"[*] Loading TSBS data for {fmt} using {load_cmd}")
     cmd = f"zcat {data_file} | {load_cmd} --workers={CONFIG['workers']} " + " ".join(extra_args)
-    subprocess.run(cmd, shell=True, check=True)
+    metrics.run_and_capture(db_name, "write", cmd)
 
 def generate_queries(fmt):
     out_file = f"/tmp/{fmt}-queries.gz"
@@ -44,7 +45,7 @@ def generate_queries(fmt):
     subprocess.run(cmd, shell=True, check=True)
     return out_file
 
-def run_queries(fmt, run_cmd_name, extra_args):
+def run_queries(db_name, fmt, run_cmd_name, extra_args):
     query_file = f"/tmp/{fmt}-queries.gz"
     if not os.path.exists(query_file):
         print(f"[!] Query file {query_file} not found. Generating first...")
@@ -52,4 +53,4 @@ def run_queries(fmt, run_cmd_name, extra_args):
         
     print(f"[*] Running TSBS queries for {fmt} using {run_cmd_name}")
     cmd = f"zcat {query_file} | {run_cmd_name} --workers={CONFIG['workers']} " + " ".join(extra_args)
-    subprocess.run(cmd, shell=True, check=True)
+    metrics.run_and_capture(db_name, "read", cmd)
