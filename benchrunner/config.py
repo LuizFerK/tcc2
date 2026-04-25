@@ -1,7 +1,10 @@
 SCALES = {
-    'small':  {'CLIENT_NUMBER': '5',  'DEVICE_NUMBER': '10',  'SENSOR_NUMBER': '10', 'BATCH_SIZE_PER_WRITE': '100', 'LOOP': '1000'},
-    'medium': {'CLIENT_NUMBER': '10', 'DEVICE_NUMBER': '50',  'SENSOR_NUMBER': '20', 'BATCH_SIZE_PER_WRITE': '100', 'LOOP': '5000'},
-    'large':  {'CLIENT_NUMBER': '20', 'DEVICE_NUMBER': '100', 'SENSOR_NUMBER': '50', 'BATCH_SIZE_PER_WRITE': '100', 'LOOP': '10000'},
+    # ~1-2 min:  low schema, low loop count
+    'small':  {'CLIENT_NUMBER': '5',  'DEVICE_NUMBER': '10', 'SENSOR_NUMBER': '10', 'BATCH_SIZE_PER_WRITE': '100', 'LOOP': '1000'},
+    # ~10 min:   same schema, 5× more loops
+    'medium': {'CLIENT_NUMBER': '5',  'DEVICE_NUMBER': '10', 'SENSOR_NUMBER': '10', 'BATCH_SIZE_PER_WRITE': '100', 'LOOP': '5000'},
+    # ~1 hour:   10× more series + 5× more loops
+    'large':  {'CLIENT_NUMBER': '10', 'DEVICE_NUMBER': '50', 'SENSOR_NUMBER': '20', 'BATCH_SIZE_PER_WRITE': '100', 'LOOP': '5000'},
 }
 
 CONFIG = {

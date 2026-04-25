@@ -39,9 +39,9 @@
               echo "============================================="
               echo "  nix run .#build             build iot-benchmark"
               echo "  nix run .#benchmark         run all benchmarks (small)"
-              echo "  nix run .#benchmark --medium   medium scale"
-              echo "  nix run .#benchmark --large    large scale"
-              echo "  nix run .#benchmark --db iotdb --test write"
+              echo "  nix run .#benchmark -- --medium   medium scale"
+              echo "  nix run .#benchmark -- --large    large scale"
+              echo "  nix run .#benchmark -- --db iotdb --test write"
               echo "============================================="
             '';
           };

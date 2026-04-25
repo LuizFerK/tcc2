@@ -1,7 +1,13 @@
 from benchrunner import iot_benchmark
 
+
+def run(test_type):
+    iot_benchmark.run(test_type)
+
+
 def write():
-    iot_benchmark.run('write')
+    run('write')
+
 
 def read():
-    iot_benchmark.run('read')
+    run('read')

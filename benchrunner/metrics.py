@@ -7,6 +7,8 @@ import os
 
 RESULTS = []
 
+WRITE_TESTS = {'write', 'out-of-order', 'batch-small', 'batch-large'}
+
 READ_OPS = {
     'PRECISE_POINT', 'TIME_RANGE', 'VALUE_RANGE',
     'AGG_RANGE', 'AGG_VALUE', 'AGG_RANGE_VALUE',
@@ -154,7 +156,7 @@ def _parse_and_store(db_name, test_type, output, avg_cpu, peak_cpu, avg_mem, pea
     lat_matrix = _parse_latency_matrix(output)
     elapsed    = _parse_elapsed(output)
 
-    if test_type == 'write':
+    if test_type in WRITE_TESTS:
         row = res_matrix.get('INGESTION', (0, 0, 0.0))
         lat = lat_matrix.get('INGESTION', (0.0, 0.0))
         throughput = f'{row[2]:.2f} pts/s'
