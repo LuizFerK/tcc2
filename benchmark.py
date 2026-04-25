@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+import os
 import argparse
 import subprocess
 
@@ -66,6 +67,9 @@ def main():
                 sys.exit(1)
 
     metrics.print_summary()
+
+    csv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results', f'{args.scale}.csv')
+    metrics.write_csv(csv_path)
 
 
 if __name__ == '__main__':

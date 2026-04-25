@@ -201,3 +201,38 @@ def print_summary():
     for r in RESULTS:
         print('|' + '|'.join(f' {str(r[c]):<{widths[c]}} ' for c in cols) + '|')
     print(sep + '\n')
+
+
+def _parse_float(s):
+    """Extract the leading float from a formatted string like '9.12 ms' or '2.5%'."""
+    try:
+        return float(re.search(r'[\d.]+', str(s)).group())
+    except (AttributeError, ValueError):
+        return 0.0
+
+
+def write_csv(path):
+    """Write RESULTS to a CSV file compatible with charts.py."""
+    import csv
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow([
+            'db', 'test', 'time_s',
+            'throughput_pts_s', 'avg_lat_ms', 'p99_lat_ms',
+            'avg_cpu_pct', 'peak_cpu_pct', 'avg_mem_mb', 'peak_mem_mb',
+        ])
+        for r in RESULTS:
+            writer.writerow([
+                r['DB'],
+                r['Test'],
+                _parse_float(r['Time (s)']),
+                _parse_float(r['Throughput']),
+                _parse_float(r['Avg Lat']),
+                _parse_float(r['P99 Lat']),
+                _parse_float(r['Avg CPU']),
+                _parse_float(r['Peak CPU']),
+                _parse_float(r['Avg Mem']),
+                _parse_float(r['Peak Mem']),
+            ])
+    print(f'[+] Results written to {path}')

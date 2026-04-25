@@ -4,7 +4,7 @@
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
   outputs =
-    { self, nixpkgs }:
+    { nixpkgs, ... }:
     let
       supportedSystems = [
         "x86_64-linux"
@@ -15,7 +15,6 @@
       forEachSystem = nixpkgs.lib.genAttrs supportedSystems;
     in
     {
-      # ── dev shell ─────────────────────────────────────────────────────────
       devShells = forEachSystem (
         system:
         let
@@ -28,86 +27,46 @@
               maven
               docker
               docker-compose
-              python3
+              (python3.withPackages (
+                ps: with ps; [
+                  matplotlib
+                  numpy
+                  pandas
+                ]
+              ))
               gnused
               findutils
               git
             ];
             shellHook = ''
-              echo "============================================="
+              if [ ! -f "$PWD/iot-benchmark/influxdb-2.0/target/iot-benchmark-influxdb-2.0/iot-benchmark-influxdb-2.0/benchmark.sh" ] || \
+                 [ ! -f "$PWD/iot-benchmark/timescaledb/target/iot-benchmark-timescaledb/iot-benchmark-timescaledb/benchmark.sh" ] || \
+                 [ ! -f "$PWD/iot-benchmark/iotdb-1.3/target/iot-benchmark-iotdb-1.3/iot-benchmark-iotdb-1.3/benchmark.sh" ]; then
+                echo "[+] Building iot-benchmark modules (first time setup)..."
+                (
+                  cd "$PWD/iot-benchmark"
+                  mvn -pl influxdb-2.0,timescaledb,iotdb-1.3 -am package -DskipTests -U
+                  find . -path "*/target/*" -name "*.sh" \
+                    -exec sed -i 's|#!/bin/bash\b|#!/usr/bin/env bash|g' {} +
+                )
+                echo "[+] Build complete."
+              else
+                echo "[+] iot-benchmark already built, skipping."
+              fi
+
+              echo "======================================================================="
               echo " TCC IoT Benchmark — dev shell"
-              echo "============================================="
-              echo "  nix run .#build             build iot-benchmark"
-              echo "  nix run .#benchmark         run all benchmarks (small)"
-              echo "  nix run .#benchmark -- --medium   medium scale"
-              echo "  nix run .#benchmark -- --large    large scale"
-              echo "  nix run .#benchmark -- --db iotdb --test write"
-              echo "============================================="
+              echo "======================================================================="
+              echo "  python3 benchmark.py                       run all DBs, small scale"
+              echo "  python3 benchmark.py --scale medium        medium scale (~30 min)"
+              echo "  python3 benchmark.py --scale large         large scale (~2 h)"
+              echo "  python3 benchmark.py --db iotdb            iotdb only"
+              echo "  python3 benchmark.py --test write          write only"
+              echo "  python3 charts.py                          all sources, en-us"
+              echo "  python3 charts.py --source medium          single source"
+              echo "  python3 charts.py --language pt-br         portuguese labels"
+              echo "======================================================================="
             '';
-          };
-        }
-      );
-
-      # ── apps ──────────────────────────────────────────────────────────────
-      apps = forEachSystem (
-        system:
-        let
-          pkgs = nixpkgs.legacyPackages.${system};
-
-          pythonEnv = pkgs.python3.withPackages (ps: with ps; [ ]);
-
-          buildApp = pkgs.writeShellApplication {
-            name = "build-benchmark";
-            runtimeInputs = [
-              pkgs.jdk17
-              pkgs.maven
-              pkgs.git
-              pkgs.findutils
-              pkgs.gnused
-            ];
-            text = ''
-              ROOT="$(git -C "$PWD" rev-parse --show-toplevel 2>/dev/null || echo "$PWD")"
-              cd "$ROOT/iot-benchmark"
-
-              echo "[+] Building iot-benchmark modules (iotdb-1.3, influxdb-2.0, timescaledb)..."
-              mvn -pl influxdb-2.0,timescaledb,iotdb-1.3 -am package -DskipTests -U
-
-              echo "[+] Patching shebangs for NixOS / non-FHS compatibility..."
-              find . -path "*/target/*" -name "*.sh" \
-                -exec sed -i 's|#!/bin/bash\b|#!/usr/bin/env bash|g' {} +
-
-              echo "[+] Build complete."
-            '';
-          };
-
-          benchmarkApp = pkgs.writeShellApplication {
-            name = "run-benchmark";
-            runtimeInputs = [
-              pkgs.jdk17
-              pkgs.docker
-              pkgs.docker-compose
-              pythonEnv
-              pkgs.git
-            ];
-            text = ''
-              ROOT="$(git -C "$PWD" rev-parse --show-toplevel 2>/dev/null || echo "$PWD")"
-              cd "$ROOT"
-              exec python3 benchmark.py "$@"
-            '';
-          };
-        in
-        {
-          build = {
-            type = "app";
-            program = "${buildApp}/bin/build-benchmark";
-          };
-          benchmark = {
-            type = "app";
-            program = "${benchmarkApp}/bin/run-benchmark";
-          };
-          default = {
-            type = "app";
-            program = "${benchmarkApp}/bin/run-benchmark";
           };
         }
       );

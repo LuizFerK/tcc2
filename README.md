@@ -48,6 +48,7 @@ scripts/
 
 ## Tech Stack
 
++---------------------+-----------------------------------------------------------------------+
 | Layer               | Technology                                                            |
 |---------------------|-----------------------------------------------------------------------|
 | Workload generator  | [iot-benchmark](https://github.com/thulab/iot-benchmark) (Java, Maven)|
@@ -57,12 +58,16 @@ scripts/
 | IoTDB               | apache/iotdb:1.3.0-standalone                                         |
 | InfluxDB            | influxdb:2.7-alpine                                                   |
 | TimescaleDB         | timescale/timescaledb:latest-pg15                                     |
++---------------------+-----------------------------------------------------------------------+
 
 ---
 
 ## Prerequisites
 
-- [Nix](https://nixos.org/) with flakes enabled, **or** manually: JDK 17, Maven, Docker, Docker Compose, Python 3
+- JDK 17
+- Maven
+- Docker and Docker Compose
+- Python 3
 - Docker daemon running
 
 ---
@@ -73,12 +78,23 @@ scripts/
 # Clone with submodule
 git clone --recurse-submodules <repo-url>
 cd tcc2
+```
 
+### Nix
+
+```bash
 # Enter dev shell (provides java, mvn, docker, python)
 nix develop
 
 # Build the Java benchmark clients (one-time)
 nix run .#build
+```
+
+### Non-Nix
+
+```bash
+# Build the Java benchmark clients (one-time)
+cd iot-benchmark && mvn -pl influxdb-2.0,timescaledb,iotdb-1.3 package -DskipTests -q && cd ..
 ```
 
 ---
@@ -98,20 +114,24 @@ python3 benchmark.py --db timescaledb --scale medium
 
 ### Options
 
++-----------+---------+--------------------------------------------------------+
 | Flag      | Default | Values                                                 |
 |-----------|---------|--------------------------------------------------------|
 | `--db`    | `all`   | `all`, `influxdb`, `timescaledb`, `iotdb`              |
 | `--scale` | `small` | `small` (~5 min), `medium` (~30 min), `large` (~2 h)   |
++-----------+---------+--------------------------------------------------------+
 
 `--test` (default `all`): `all`, `write`, `out-of-order`, `batch-small`, `batch-large`, `read`, `latest-point`, `downsample`, `range-query`, `value-filter`
 
 ### Scale parameters
 
++--------+---------+---------+---------+------------+-------+
 | Scale  | Clients | Devices | Sensors | Batch size | Loops |
 |--------|---------|---------|---------|------------|-------|
 | small  | 5       | 10      | 10      | 100        | 1000  |
 | medium | 5       | 10      | 10      | 100        | 5000  |
 | large  | 10      | 50      | 20      | 100        | 5000  |
++--------+---------+---------+---------+------------+-------+
 
 ---
 
@@ -121,15 +141,18 @@ When `--test all` is used, tests run in this order: write variants first (each c
 
 ### Write tests
 
++----------------+-----------------------------------------------------------------------------------------------------------------------------------------------+
 | Test           | What it measures                                                                                                                              |
 |----------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
 | `write`        | Baseline sequential ingestion - ordered timestamps, default batch size                                                                        |
 | `out-of-order` | 20% late-arriving data (Poisson distribution) - simulates network-delayed IoT sensors; reveals write-amplification from out-of-order handling |
 | `batch-small`  | `BATCH_SIZE=1` - one write request per data point; isolates per-request protocol overhead (HTTP round-trip, WAL flush, Thrift call)           |
 | `batch-large`  | `BATCH_SIZE=1000` - large batches; tests bulk-loading efficiency and where each database's batching ceiling lies                              |
++----------------+-----------------------------------------------------------------------------------------------------------------------------------------------+
 
 ### Read tests
 
++----------------+-----------------------------------------------+--------------------------------------------------------------------------------------------+
 | Test           | Queries active                                | What it measures                                                                           |
 |----------------|-----------------------------------------------|--------------------------------------------------------------------------------------------|
 | `read`         | All 10 supported types                        | Comprehensive read baseline - all analytics patterns equally weighted                      |
@@ -137,6 +160,7 @@ When `--test all` is used, tests run in this order: write variants first (each c
 | `downsample`   | `GROUP_BY`                                    | Dashboard aggregation - time-bucketed averages; tests native downsampling push-down        |
 | `range-query`  | `TIME_RANGE`                                  | Bulk data export - sequential scan over a time window; tests decompression throughput      |
 | `value-filter` | `VALUE_RANGE`, `AGG_VALUE`, `AGG_RANGE_VALUE` | Threshold alerting - "readings above X"; tests predicate pushdown into the storage layer   |
++----------------+-----------------------------------------------+--------------------------------------------------------------------------------------------+
 
 ---
 
@@ -228,11 +252,13 @@ IoTDB dominates write throughput at every batch size. The gap is explained by th
 
 **Batch size sensitivity.** The `batch-small` vs `batch-large` comparison shows this clearly:
 
++-------------+-------------------+-------------------+--------+
 | DB          | BATCH-SMALL pts/s | BATCH-LARGE pts/s |  Ratio |
-|-------------|------------------:|------------------:|-------:|
+|-------------|-------------------|-------------------|--------|
 | InfluxDB    |             5,169 |         2,193,905 |   424x |
 | TimescaleDB |             4,455 |           160,547 |    36x |
 | IoTDB       |            24,268 |        13,897,643 |   573x |
++-------------+-------------------+-------------------+--------+
 
 InfluxDB and IoTDB are extremely sensitive to batch size because of per-request overhead (HTTP round-trip and Thrift call respectively). TimescaleDB's lower ratio reflects PostgreSQL's WAL flush cost dominating even for small batches — the per-row overhead is already high, so larger batches help less.
 
@@ -244,21 +270,25 @@ The `Throughput (pts/s)` column for read tests sums the point counts of all acti
 
 **Value-filter queries are the clearest differentiator.** Finding records that match a value predicate (`sensor > threshold`) cannot be answered from time-based indexes alone. Each database must either do a full chunk scan or maintain a secondary index:
 
++-------------+----------------------+----------------------+
 | DB          | Value-filter avg lat | Value-filter P99 lat |
-|-------------|---------------------:|---------------------:|
-| IoTDB       |               3.79 ms |              14.22 ms |
-| TimescaleDB |              40.12 ms |             251.06 ms |
-| InfluxDB    |              89.85 ms |             341.34 ms |
+|-------------|----------------------|----------------------|
+| IoTDB       |              3.79 ms |             14.22 ms |
+| TimescaleDB |             40.12 ms |            251.06 ms |
+| InfluxDB    |             89.85 ms |            341.34 ms |
++-------------+----------------------+----------------------+
 
 IoTDB stores min/max statistics per TsFile chunk and uses them to skip chunks that cannot contain matching values. InfluxDB has no equivalent — it scans all TSM blocks. TimescaleDB relies on PostgreSQL's BRIN index, which gives partial pruning but still scans substantially more data than IoTDB's statistics-based approach.
 
 **Downsampling (GROUP BY time buckets)** is where TimescaleDB shows strength relative to InfluxDB despite its write disadvantage:
 
++-------------+--------------------+
 | DB          | Downsample avg lat |
-|-------------|-------------------:|
+|-------------|--------------------|
 | TimescaleDB |            0.72 ms |
 | IoTDB       |            1.07 ms |
 | InfluxDB    |            6.85 ms |
++-------------+--------------------+
 
 TimescaleDB's `time_bucket()` aggregation runs entirely inside the PostgreSQL executor with its hot shared_buffers cache. InfluxDB's Flux aggregation engine has higher per-query overhead.
 
@@ -266,11 +296,13 @@ TimescaleDB's `time_bucket()` aggregation runs entirely inside the PostgreSQL ex
 
 The `pts/s` figure for `latest-point` appears low compared to `range-query` because the two queries return fundamentally different amounts of data per call: a range query returns hundreds of points per call (high pts/s), while latest-point returns exactly one point per call (pts/s ≈ queries/second). **Latency** is the correct metric here:
 
++-------------+----------------------+---------------------+
 | DB          | Latest-point avg lat | Range-query avg lat |
-|-------------|---------------------:|--------------------:|
+|-------------|----------------------|---------------------|
 | TimescaleDB |          **0.50 ms** |             0.64 ms |
 | IoTDB       |          **0.78 ms** |             1.35 ms |
 | InfluxDB    |         **10.85 ms** |             6.50 ms |
++-------------+----------------------+---------------------+
 
 TimescaleDB and IoTDB are actually *faster* for latest-point than for range queries — TimescaleDB via a `SELECT ... ORDER BY time DESC LIMIT 1` reverse B-tree scan, and IoTDB via a dedicated in-memory last-value cache that bypasses TsFile entirely. InfluxDB has no equivalent shortcut and must seek to the tail of each series in its TSM blocks, making it the only database where latest-point is slower than a range scan.
 
@@ -280,6 +312,7 @@ IoTDB's dominant write throughput comes with a significant cost: it occupies ~12
 
 ### Summary
 
++-----------------------------------+-------------+-------------------------------------------+
 | Workload                          | Best DB     | Reason                                    |
 |-----------------------------------|-------------|-------------------------------------------|
 | High-rate sequential ingestion    | IoTDB       | Binary tablet protocol + memory buffering |
@@ -291,6 +324,7 @@ IoTDB's dominant write throughput comes with a significant cost: it occupies ~12
 | Threshold alerting (value filter) | IoTDB       | Chunk statistics for early pruning        |
 | Real-time last-value lookup       | TimescaleDB | Sub-millisecond reverse index scan        |
 | Memory efficiency                 | InfluxDB    | TSM cache capped at 1 GB by default       |
++-----------------------------------+-------------+-------------------------------------------+
 
 IoTDB is the clear winner for write-heavy workloads but requires substantial memory and is purpose-built for the IoT domain. TimescaleDB trades raw write speed for SQL compatibility, mature tooling, and surprisingly strong read performance once data is cached. InfluxDB occupies the middle ground: better write throughput than TimescaleDB, better memory efficiency than IoTDB, but weaker on complex read patterns.
 
@@ -308,11 +342,13 @@ Running the same workload with 5× more loops (5,000 vs 1,000) confirms most of 
 
 **IoTDB's value-filter chunk-statistics advantage is a constant factor, not asymptotic.** All three databases scale roughly linearly with data size for value-filter:
 
++-------------+---------------+----------------+-------+---------------+
 | DB          | Small avg lat | Medium avg lat | Ratio | Expected (5×) |
-|-------------|:-------------:|:--------------:|:-----:|:-------------:|
+|-------------|---------------|----------------|-------|---------------|
 | IoTDB       |     3.79 ms   |    19.17 ms    |  5.1× |     5×        |
 | TimescaleDB |    40.12 ms   |   175.07 ms    |  4.4× |     5×        |
 | InfluxDB    |    89.85 ms   |   396.15 ms    |  4.4× |     5×        |
++-------------+---------------+----------------+-------+---------------+
 
 IoTDB remains ~5–20× faster in absolute terms, but the gap does not grow with scale. The chunk-statistics skip is a pruning optimisation, not an index.
 
@@ -326,11 +362,13 @@ IoTDB remains ~5–20× faster in absolute terms, but the gap does not grow with
 
 **InfluxDB latest-point latency scales with dataset size; TimescaleDB and IoTDB do not.**
 
++-------------+---------------+----------------+
 | DB          | Small avg lat | Medium avg lat |
-|-------------|:-------------:|:--------------:|
+|-------------|---------------|----------------|
 | InfluxDB    |   10.85 ms    |    23.18 ms    |
 | IoTDB       |    0.78 ms    |     0.75 ms    |
 | TimescaleDB |    0.50 ms    |     0.53 ms    |
++-------------+---------------+----------------+
 
 TimescaleDB's reverse B-tree scan and IoTDB's in-memory last-value cache are O(1) with respect to total stored data. InfluxDB must seek to the end of each series' TSM file blocks, and that seek cost grows as more files accumulate. In any long-running deployment this gap will compound.
 
@@ -360,19 +398,23 @@ The summary table from the small-scale analysis stands, with two corrections:
 
 ### Host machine
 
++-----------+----------------------------------------------------------------------------+
 | Component | Details                                                                    |
 |-----------|----------------------------------------------------------------------------|
 | CPU       | Intel Core i5-11400F (6 cores / 12 threads, 2.60 GHz base, 4.40 GHz boost) |
 | RAM       | 32 GB                                                                      |
 | Disk      | 500 GB                                                                     |
 | OS        | NixOS (Linux 6.12)                                                         |
++-----------+----------------------------------------------------------------------------+
 
 ### Docker containers
 
 All three containers run on the same host with no explicit CPU or memory limits set — each competes for the full machine resources during its benchmark run.
 
-| Container | Image |
-|-----------|-------|
-| IoTDB | `apache/iotdb:1.3.0-standalone` |
-| InfluxDB | `influxdb:2.7-alpine` |
++-------------+-----------------------------------------------------+
+| Container   | Image                                               |
+|-------------|-----------------------------------------------------|
+| IoTDB       | `apache/iotdb:1.3.0-standalone`                     |
+| InfluxDB    | `influxdb:2.7-alpine`                               |
 | TimescaleDB | `timescale/timescaledb:latest-pg15` (PostgreSQL 15) |
++-------------+-----------------------------------------------------+
