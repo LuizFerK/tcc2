@@ -1,6 +1,3 @@
-[submodule "questdb-tsbs"]
-	path = questdb-tsbs
-	url = https://github.com/questdb/tsbs.git
 [submodule "iot-benchmark"]
 	path = iot-benchmark
 	url = https://github.com/thulab/iot-benchmark.git

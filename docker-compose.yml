@@ -45,8 +45,11 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgrespassword123
       - POSTGRES_DB=timescaledb
+      - POSTGRES_HOST_AUTH_METHOD=md5
+    command: ["postgres", "-c", "password_encryption=md5"]
     volumes:
       - timescaledb_data:/var/lib/postgresql/data
+      - ./scripts/init-timescaledb.sql:/docker-entrypoint-initdb.d/01-md5-auth.sql
     restart: unless-stopped
 
 # -------------------------------------------------------------------

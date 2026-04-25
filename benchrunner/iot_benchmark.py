@@ -2,52 +2,57 @@ import os
 import re
 import subprocess
 
-def update_config(work_mode):
-    config_path = "iot-benchmark/iotdb-1.3/target/iot-benchmark-iotdb-1.3/iot-benchmark-iotdb-1.3/conf/config.properties"
-    if not os.path.exists(config_path):
-        print(f"[!] IoT-Benchmark config not found at {config_path}")
-        print("    Did you compile the iot-benchmark tool?")
+from benchrunner.config import CONFIG, get_scale_params
+
+# Read-only proportion: all 11 read query types, skip GROUP_BY_DESC (pos 12) and SET_OPERATION (pos 13)
+WRITE_PROPORTION = '1:0:0:0:0:0:0:0:0:0:0:0:0'
+READ_PROPORTION  = '0:1:1:1:1:1:1:1:1:1:1:1:0'
+
+CONFIG_PATH = (
+    'iot-benchmark/iotdb-1.3/target/iot-benchmark-iotdb-1.3'
+    '/iot-benchmark-iotdb-1.3/conf/config.properties'
+)
+CWD = (
+    'iot-benchmark/iotdb-1.3/target/iot-benchmark-iotdb-1.3'
+    '/iot-benchmark-iotdb-1.3'
+)
+
+def update_config(test_type):
+    if not os.path.exists(CONFIG_PATH):
+        print(f'[!] IoT-Benchmark config not found at {CONFIG_PATH}')
+        print('    Run: nix run .#build')
         return False
-        
-    print(f"[*] Updating IoT-Benchmark config to work_mode={work_mode}")
-    with open(config_path, 'r') as f:
-        content = f.read()
-        
+
+    scale = get_scale_params()
+    is_write = test_type == 'write'
     props = {
-        'DB_SWITCH': 'IoTDB-130-SESSION_BY_TABLET',
-        'HOST': '127.0.0.1',
-        'PORT': '6667',
-        'USERNAME': 'root',
-        'PASSWORD': 'root',
-        'BENCHMARK_WORK_MODE': work_mode,
-        'DEVICE_NUMBER': '100',
-        'SENSOR_NUMBER': '10',
-        'DATA_TYPE': 'DOUBLE',
-        'LOOP': '155',
-        'CLIENT_NUMBER': '10',
-        'BATCH_SIZE_PER_WRITE': '100',
-        'CSV_OUTPUT': 'true'
+        'DB_SWITCH':            'IoTDB-130-SESSION_BY_TABLET',
+        'HOST':                 '127.0.0.1',
+        'PORT':                 '6667',
+        'USERNAME':             'root',
+        'PASSWORD':             'root',
+        'BENCHMARK_WORK_MODE':  'testWithDefaultPath',
+        'OPERATION_PROPORTION': WRITE_PROPORTION if is_write else READ_PROPORTION,
+        'IS_DELETE_DATA':       'true' if is_write else 'false',
+        'CSV_OUTPUT':           'true',
+        **scale,
     }
-    
+
+    with open(CONFIG_PATH, 'r') as f:
+        content = f.read()
     for k, v in props.items():
-        if re.search(f"^{k}=.*$", content, flags=re.MULTILINE):
-            content = re.sub(f"^{k}=.*$", f"{k}={v}", content, flags=re.MULTILINE)
+        if re.search(f'^{k}=', content, re.M):
+            content = re.sub(f'^{k}=.*$', f'{k}={v}', content, flags=re.M)
         else:
-            content += f"\n{k}={v}\n"
-    
-    with open(config_path, 'w') as f:
+            content += f'\n{k}={v}'
+    with open(CONFIG_PATH, 'w') as f:
         f.write(content)
     return True
 
 from benchrunner import metrics
 
-def run(work_mode):
-    if not update_config(work_mode):
+def run(test_type):
+    print(f'\n[*] Running IoT-Benchmark for Apache IoTDB ({test_type})...')
+    if not update_config(test_type):
         return
-        
-    cwd = "iot-benchmark/iotdb-1.3/target/iot-benchmark-iotdb-1.3/iot-benchmark-iotdb-1.3"
-    print(f"[*] Running IoT-Benchmark for Apache IoTDB ({work_mode})...")
-    
-    cmd = "./benchmark.sh"
-    test_type = "write" if work_mode == "insertTest" else "read"
-    metrics.run_and_capture("iotdb", test_type, cmd, cwd=cwd)
+    metrics.run_and_capture('iotdb', test_type, 'bash benchmark.sh', cwd=CWD)
