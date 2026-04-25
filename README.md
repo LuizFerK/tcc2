@@ -140,7 +140,9 @@ When `--test all` is used, tests run in this order: write variants first (each c
 
 ---
 
-## Results (small scale)
+## Results
+
+### Small scale
 
 ```
 +-------------+--------------+----------+-------------------+-----------+------------+---------+----------+------------+------------+
@@ -173,6 +175,42 @@ When `--test all` is used, tests run in this order: write variants first (each c
 | IOTDB       | DOWNSAMPLE   | 2.19     | 29697.05 pts/s    | 1.07 ms   | 3.01 ms    | 4.8%    | 13.8%    | 12554.2 MB | 12554.2 MB |
 | IOTDB       | RANGE-QUERY  | 2.48     | 100916.37 pts/s   | 1.35 ms   | 3.81 ms    | 5.1%    | 14.3%    | 12554.2 MB | 12554.2 MB |
 | IOTDB       | VALUE-FILTER | 5.03     | 17504.97 pts/s    | 3.79 ms   | 14.22 ms   | 17.4%   | 42.3%    | 12556.8 MB | 12564.5 MB |
++-------------+--------------+----------+-------------------+-----------+------------+---------+----------+------------+------------+
+```
+
+### Medium scale
+
+```
++-------------+--------------+----------+-------------------+-----------+------------+---------+----------+------------+------------+
+| DB          | Test         | Time (s) | Throughput        | Avg Lat   | P99 Lat    | Avg CPU | Peak CPU | Avg Mem    | Peak Mem   |
++-------------+--------------+----------+-------------------+-----------+------------+---------+----------+------------+------------+
+| INFLUXDB    | BATCH-SMALL  | 106.88   | 4678.00 pts/s     | 10.56 ms  | 36.41 ms   | 4.5%    | 7.0%     | 192.4 MB   | 207.7 MB   |
+| INFLUXDB    | BATCH-LARGE  | 240.45   | 2079443.35 pts/s  | 23.81 ms  | 238.84 ms  | 23.7%   | 36.8%    | 1812.1 MB  | 3152.9 MB  |
+| INFLUXDB    | OUT-OF-ORDER | 200.75   | 249071.69 pts/s   | 19.88 ms  | 102.65 ms  | 7.6%    | 21.8%    | 693.3 MB   | 3145.7 MB  |
+| INFLUXDB    | WRITE        | 137.49   | 363669.90 pts/s   | 13.59 ms  | 210.95 ms  | 8.8%    | 18.8%    | 502.9 MB   | 664.9 MB   |
+| INFLUXDB    | READ         | 605.70   | 871.99 pts/s      | 121.21 ms | 1330.58 ms | 52.3%   | 57.5%    | 713.8 MB   | 790.5 MB   |
+| INFLUXDB    | LATEST-POINT | 117.40   | 212.95 pts/s      | 23.18 ms  | 32.34 ms   | 49.8%   | 54.3%    | 270.4 MB   | 285.8 MB   |
+| INFLUXDB    | DOWNSAMPLE   | 37.34    | 8702.82 pts/s     | 7.17 ms   | 11.80 ms   | 38.7%   | 45.2%    | 252.1 MB   | 255.4 MB   |
+| INFLUXDB    | RANGE-QUERY  | 38.67    | 31679.75 pts/s    | 7.45 ms   | 15.17 ms   | 35.6%   | 44.0%    | 254.3 MB   | 256.6 MB   |
+| INFLUXDB    | VALUE-FILTER | 2003.30  | 210.46 pts/s      | 396.15 ms | 1363.74 ms | 46.9%   | 50.2%    | 304.4 MB   | 335.2 MB   |
+| TIMESCALEDB | BATCH-SMALL  | 110.59   | 4521.20 pts/s     | 10.91 ms  | 36.46 ms   | 4.1%    | 6.1%     | 5450.6 MB  | 5458.9 MB  |
+| TIMESCALEDB | BATCH-LARGE  | 3104.23  | 161070.48 pts/s   | 308.38 ms | 1036.76 ms | 31.0%   | 40.0%    | 6042.1 MB  | 8177.7 MB  |
+| TIMESCALEDB | OUT-OF-ORDER | 396.24   | 126186.45 pts/s   | 38.71 ms  | 263.93 ms  | 24.7%   | 36.4%    | 8160.1 MB  | 8178.7 MB  |
+| TIMESCALEDB | WRITE        | 396.41   | 126131.18 pts/s   | 38.72 ms  | 252.60 ms  | 26.0%   | 34.6%    | 8185.3 MB  | 8201.2 MB  |
+| TIMESCALEDB | READ         | 284.43   | 1891.76 pts/s     | 57.25 ms  | 1672.74 ms | 77.4%   | 87.9%    | 8227.4 MB  | 8233.0 MB  |
+| TIMESCALEDB | LATEST-POINT | 3.79     | 6588.95 pts/s     | 0.53 ms   | 1.56 ms    | 13.7%   | 34.7%    | 8184.6 MB  | 8192.0 MB  |
+| TIMESCALEDB | DOWNSAMPLE   | 4.54     | 71508.71 pts/s    | 0.67 ms   | 1.74 ms    | 13.9%   | 35.9%    | 8184.3 MB  | 8191.0 MB  |
+| TIMESCALEDB | RANGE-QUERY  | 4.09     | 305461.28 pts/s   | 0.59 ms   | 1.61 ms    | 13.5%   | 34.8%    | 8184.3 MB  | 8191.0 MB  |
+| TIMESCALEDB | VALUE-FILTER | 891.75   | 482.07 pts/s      | 175.07 ms | 1299.50 ms | 76.6%   | 88.3%    | 8228.8 MB  | 8236.0 MB  |
+| IOTDB       | BATCH-SMALL  | 6.26     | 79923.31 pts/s    | 0.51 ms   | 1.29 ms    | 4.9%    | 21.9%    | 12520.6 MB | 12533.8 MB |
+| IOTDB       | BATCH-LARGE  | 25.17    | 19868484.80 pts/s | 2.22 ms   | 10.28 ms   | 23.0%   | 48.5%    | 12573.5 MB | 12595.2 MB |
+| IOTDB       | OUT-OF-ORDER | 8.30     | 6021299.84 pts/s  | 0.67 ms   | 1.82 ms    | 8.4%    | 37.4%    | 12625.9 MB | 12656.6 MB |
+| IOTDB       | WRITE        | 7.84     | 6378193.32 pts/s  | 0.65 ms   | 2.01 ms    | 6.5%    | 30.1%    | 12680.5 MB | 12697.6 MB |
+| IOTDB       | READ         | 34.21    | 15215.53 pts/s    | 6.62 ms   | 78.49 ms   | 34.9%   | 45.6%    | 12699.8 MB | 12707.8 MB |
+| IOTDB       | LATEST-POINT | 4.98     | 5018.40 pts/s     | 0.75 ms   | 2.65 ms    | 13.6%   | 30.1%    | 12707.8 MB | 12707.8 MB |
+| IOTDB       | DOWNSAMPLE   | 7.58     | 42888.90 pts/s    | 1.26 ms   | 4.06 ms    | 17.2%   | 35.0%    | 12707.8 MB | 12707.8 MB |
+| IOTDB       | RANGE-QUERY  | 8.53     | 146541.98 pts/s   | 1.46 ms   | 4.40 ms    | 17.6%   | 32.9%    | 12707.8 MB | 12707.8 MB |
+| IOTDB       | VALUE-FILTER | 98.46    | 4366.15 pts/s     | 19.17 ms  | 73.48 ms   | 38.5%   | 41.5%    | 12715.2 MB | 12718.1 MB |
 +-------------+--------------+----------+-------------------+-----------+------------+---------+----------+------------+------------+
 ```
 
@@ -258,9 +296,83 @@ IoTDB is the clear winner for write-heavy workloads but requires substantial mem
 
 ---
 
+## Medium-scale validation
+
+Running the same workload with 5× more loops (5,000 vs 1,000) confirms most of the small-scale analysis but also surfaces two false positives and several new findings.
+
+### What held up
+
+**IoTDB write dominance is structural, not a warm-up artifact.** At medium scale the gap widens: IoTDB reaches 6.4 M pts/s vs InfluxDB's 363 K and TimescaleDB's 126 K. The throughput *increases* with dataset size (2.1 M → 6.4 M for sequential write), which is consistent with JVM JIT compilation saturating the Thrift write path after enough iterations. The small-scale numbers understate IoTDB's ceiling.
+
+**TimescaleDB downsample is genuinely cache-resident.** Latency is 0.72 ms at small and 0.67 ms at medium — effectively constant. Because `time_bucket()` queries scan a fixed time window (not the full dataset), the query cost does not grow with total data volume once the relevant chunks are in shared_buffers. This is the strongest validation in the dataset.
+
+**IoTDB's value-filter chunk-statistics advantage is a constant factor, not asymptotic.** All three databases scale roughly linearly with data size for value-filter:
+
+| DB          | Small avg lat | Medium avg lat | Ratio | Expected (5×) |
+|-------------|:-------------:|:--------------:|:-----:|:-------------:|
+| IoTDB       |     3.79 ms   |    19.17 ms    |  5.1× |     5×        |
+| TimescaleDB |    40.12 ms   |   175.07 ms    |  4.4× |     5×        |
+| InfluxDB    |    89.85 ms   |   396.15 ms    |  4.4× |     5×        |
+
+IoTDB remains ~5–20× faster in absolute terms, but the gap does not grow with scale. The chunk-statistics skip is a pruning optimisation, not an index.
+
+### False positives corrected
+
+**"InfluxDB handles out-of-order writes nearly as fast as sequential" — this was imprecise.** The actual drop is 38% at small scale (272 K vs 439 K pts/s) and 32% at medium (249 K vs 363 K pts/s). That is a consistent and significant overhead, not a negligible one. The correct statement is that InfluxDB tolerates out-of-order writes with moderate throughput cost, which is still markedly better than IoTDB's TSM compaction path and roughly equivalent to TimescaleDB.
+
+**InfluxDB's memory footprint was understated.** The small-scale description of "~300–900 MB" and the claim that the TSM cache is "capped at 1 GB by default" are misleading at scale. At medium scale, batch-large and out-of-order peak at **3.1 GB**, and the summary table's "memory efficiency" win for InfluxDB only holds for the small write test. Total process RSS includes WAL buffers, the series index, and Go runtime overhead well beyond the TSM cache limit.
+
+### New findings from medium scale
+
+**InfluxDB latest-point latency scales with dataset size; TimescaleDB and IoTDB do not.**
+
+| DB          | Small avg lat | Medium avg lat |
+|-------------|:-------------:|:--------------:|
+| InfluxDB    |   10.85 ms    |    23.18 ms    |
+| IoTDB       |    0.78 ms    |     0.75 ms    |
+| TimescaleDB |    0.50 ms    |     0.53 ms    |
+
+TimescaleDB's reverse B-tree scan and IoTDB's in-memory last-value cache are O(1) with respect to total stored data. InfluxDB must seek to the end of each series' TSM file blocks, and that seek cost grows as more files accumulate. In any long-running deployment this gap will compound.
+
+**TimescaleDB read P99 latency degrades sharply at medium scale** (275 ms → 1672 ms for the mixed `READ` workload). The average improves relative to InfluxDB (57 ms vs 121 ms), but the tail grows faster. Queries that fall outside the shared_buffers warm region trigger full chunk scans with no bounding index, producing unbounded tail latency as the dataset grows.
+
+**IoTDB reads scale sublinearly.** The mixed `READ` average latency increases only 2.9× for 5× more data (2.26 ms → 6.62 ms). This is better than InfluxDB (4.3×) or TimescaleDB (4.4×), suggesting IoTDB's JVM heap cache covers a proportionally larger share of the working set as queries run longer.
+
+### Revised summary
+
+The summary table from the small-scale analysis stands, with two corrections:
+
+- **Out-of-order tolerance**: InfluxDB is better than TimescaleDB but the advantage is moderate (~30–38% throughput penalty), not negligible.
+- **Memory efficiency**: InfluxDB wins only at small scale; at medium scale its peak RSS (3.1 GB) is comparable to or worse than TimescaleDB's starting footprint.
+
+---
+
 ## Limitations
 
 - **Cache warm-up:** Read tests run sequentially on the same dataset. Later tests benefit from warmer OS page cache and DB in-memory structures. For production-quality isolation, each test should flush caches and restart containers.
 - **Default configurations:** No database was tuned beyond what is necessary to run the benchmark (TimescaleDB uses PostgreSQL's default `shared_buffers=128 MB`). Tuning each database to use equal memory budgets would narrow some gaps.
 - **IoTDB memory buffering:** IoTDB's write throughput is partly a consequence of deferred durability — data lives in RAM until the memtable is flushed. The numbers reflect in-memory write acknowledgement, not guaranteed persistence.
 - **Single-node, single-machine:** All three databases and the benchmark clients ran on the same host. Network latency (relevant for InfluxDB's HTTP API) is near zero, which flattens a real-world disadvantage.
+
+---
+
+## Test Environment
+
+### Host machine
+
+| Component | Details                                                                    |
+|-----------|----------------------------------------------------------------------------|
+| CPU       | Intel Core i5-11400F (6 cores / 12 threads, 2.60 GHz base, 4.40 GHz boost) |
+| RAM       | 32 GB                                                                      |
+| Disk      | 500 GB                                                                     |
+| OS        | NixOS (Linux 6.12)                                                         |
+
+### Docker containers
+
+All three containers run on the same host with no explicit CPU or memory limits set — each competes for the full machine resources during its benchmark run.
+
+| Container | Image |
+|-----------|-------|
+| IoTDB | `apache/iotdb:1.3.0-standalone` |
+| InfluxDB | `influxdb:2.7-alpine` |
+| TimescaleDB | `timescale/timescaledb:latest-pg15` (PostgreSQL 15) |
