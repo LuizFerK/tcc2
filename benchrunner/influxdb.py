@@ -1,5 +1,3 @@
-import os
-import re
 from benchrunner.config import CONFIG, get_scale_params
 from benchrunner import metrics
 
@@ -43,13 +41,6 @@ TEST_CONFIGS = {
 
 
 def update_config(test_type):
-    if not os.path.exists(CONFIG_PATH):
-        print(f'[!] IoT-Benchmark config not found at {CONFIG_PATH}')
-        print('    Run: nix run .#build')
-        return False
-
-    scale = get_scale_params()
-    test_cfg = TEST_CONFIGS[test_type]
     props = {
         'DB_SWITCH':           'InfluxDB-2.x',
         'HOST':                CONFIG['influx_host'],
@@ -59,31 +50,13 @@ def update_config(test_type):
         'DB_NAME':             CONFIG['influx_bucket'],
         'BENCHMARK_WORK_MODE': 'testWithDefaultPath',
         'CSV_OUTPUT':          'true',
-        **scale,
-        **test_cfg,  # test-specific props override scale (e.g. BATCH_SIZE_PER_WRITE)
+        **get_scale_params(),
+        **TEST_CONFIGS[test_type],
     }
-
-    with open(CONFIG_PATH, 'r') as f:
-        content = f.read()
-    for k, v in props.items():
-        if re.search(f'^{k}=', content, re.M):
-            content = re.sub(f'^{k}=.*$', f'{k}={v}', content, flags=re.M)
-        else:
-            content += f'\n{k}={v}'
-    with open(CONFIG_PATH, 'w') as f:
-        f.write(content)
-    return True
+    return metrics.update_properties_file(CONFIG_PATH, props)
 
 
 def run(test_type):
     print(f'\n[*] Running IoT-Benchmark for InfluxDB 2.x ({test_type})...')
     if update_config(test_type):
         metrics.run_and_capture('influxdb', test_type, 'bash benchmark.sh', cwd=CWD)
-
-
-def write():
-    run('write')
-
-
-def read():
-    run('read')

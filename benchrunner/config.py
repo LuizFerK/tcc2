@@ -8,8 +8,6 @@ SCALES = {
 }
 
 CONFIG = {
-    'scale': 'small',
-
     # InfluxDB
     'influx_host':   'localhost',
     'influx_port':   '8086',
@@ -25,5 +23,7 @@ CONFIG = {
     'timescale_db':   'timescaledb',
 }
 
+current_scale = 'small'
+
 def get_scale_params():
-    return SCALES[CONFIG['scale']]
+    return SCALES[current_scale]

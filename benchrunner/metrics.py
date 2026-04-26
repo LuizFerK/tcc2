@@ -81,7 +81,24 @@ class DockerMonitor:
         peak_cpu = max(self.cpu_samples) if self.cpu_samples else 0.0
         avg_mem  = sum(self.mem_samples_mb) / len(self.mem_samples_mb) if self.mem_samples_mb else 0.0
         peak_mem = max(self.mem_samples_mb) if self.mem_samples_mb else 0.0
-        return f'{avg_cpu:.1f}%', f'{peak_cpu:.1f}%', f'{avg_mem:.1f} MB', f'{peak_mem:.1f} MB'
+        return avg_cpu, peak_cpu, avg_mem, peak_mem
+
+
+def update_properties_file(path, props):
+    if not os.path.exists(path):
+        print(f'[!] Config not found at {path}')
+        print('    Run: nix run .#build')
+        return False
+    with open(path) as f:
+        content = f.read()
+    for k, v in props.items():
+        if re.search(f'^{k}=', content, re.M):
+            content = re.sub(f'^{k}=.*$', f'{k}={v}', content, flags=re.M)
+        else:
+            content += f'\n{k}={v}'
+    with open(path, 'w') as f:
+        f.write(content)
+    return True
 
 
 def run_and_capture(db_name, test_type, cmd, cwd=None):
@@ -109,9 +126,7 @@ def run_and_capture(db_name, test_type, cmd, cwd=None):
 
 
 def _parse_result_matrix(output):
-    """Return dict: operation_name -> (ok_ops, ok_points, throughput)"""
     result = {}
-    # Find the Result Matrix section
     m = re.search(r'Result Matrix[-]+\n(.+?)(?=\n[-]{10,})', output, re.S)
     if not m:
         return result
@@ -119,7 +134,7 @@ def _parse_result_matrix(output):
         parts = line.split()
         if len(parts) >= 6:
             try:
-                name, ok_op, ok_pt, fail_op, fail_pt, tput = parts[0], int(parts[1]), int(parts[2]), int(parts[3]), int(parts[4]), float(parts[5])
+                name, ok_op, ok_pt, tput = parts[0], int(parts[1]), int(parts[2]), float(parts[5])
                 result[name] = (ok_op, ok_pt, tput)
             except (ValueError, IndexError):
                 pass
@@ -127,7 +142,6 @@ def _parse_result_matrix(output):
 
 
 def _parse_latency_matrix(output):
-    """Return dict: operation_name -> (avg_ms, p99_ms)"""
     result = {}
     m = re.search(r'Latency \(ms\) Matrix[-]+\n(.+?)(?=\n[-]{10,})', output, re.S)
     if not m:
@@ -137,10 +151,7 @@ def _parse_latency_matrix(output):
         # columns: op AVG MIN P10 P25 MEDIAN P75 P90 P95 P99 P999 MAX SLOWEST
         if len(parts) >= 10:
             try:
-                name = parts[0]
-                avg_ms = float(parts[1])
-                p99_ms = float(parts[9])
-                result[name] = (avg_ms, p99_ms)
+                result[parts[0]] = (float(parts[1]), float(parts[9]))
             except (ValueError, IndexError):
                 pass
     return result
@@ -148,7 +159,7 @@ def _parse_latency_matrix(output):
 
 def _parse_elapsed(output):
     m = re.search(r'Test elapsed time.*?:\s*([\d.]+)\s*second', output, re.I)
-    return m.group(1) if m else 'N/A'
+    return float(m.group(1)) if m else None
 
 
 def _parse_and_store(db_name, test_type, output, avg_cpu, peak_cpu, avg_mem, peak_mem):
@@ -159,38 +170,51 @@ def _parse_and_store(db_name, test_type, output, avg_cpu, peak_cpu, avg_mem, pea
     if test_type in WRITE_TESTS:
         row = res_matrix.get('INGESTION', (0, 0, 0.0))
         lat = lat_matrix.get('INGESTION', (0.0, 0.0))
-        throughput = f'{row[2]:.2f} pts/s'
-        avg_lat    = f'{lat[0]:.2f} ms'
-        p99_lat    = f'{lat[1]:.2f} ms'
+        throughput = row[2]
+        avg_lat_ms = lat[0]
+        p99_lat_ms = lat[1]
     else:
         active = {op: v for op, v in res_matrix.items() if op in READ_OPS and v[0] > 0}
-        total_tput = sum(v[2] for v in active.values())
-        throughput = f'{total_tput:.2f} pts/s'
+        throughput = sum(v[2] for v in active.values())
         if active:
-            avg_lat_val = sum(lat_matrix[op][0] for op in active if op in lat_matrix) / len(active)
-            p99_lat_val = max((lat_matrix[op][1] for op in active if op in lat_matrix), default=0.0)
+            avg_lat_ms = sum(lat_matrix[op][0] for op in active if op in lat_matrix) / len(active)
+            p99_lat_ms = max((lat_matrix[op][1] for op in active if op in lat_matrix), default=0.0)
         else:
-            avg_lat_val = p99_lat_val = 0.0
-        avg_lat = f'{avg_lat_val:.2f} ms'
-        p99_lat = f'{p99_lat_val:.2f} ms'
+            avg_lat_ms = p99_lat_ms = 0.0
 
     RESULTS.append({
-        'DB':         db_name.upper(),
-        'Test':       test_type.upper(),
-        'Time (s)':   elapsed,
-        'Throughput': throughput,
-        'Avg Lat':    avg_lat,
-        'P99 Lat':    p99_lat,
-        'Avg CPU':    avg_cpu,
-        'Peak CPU':   peak_cpu,
-        'Avg Mem':    avg_mem,
-        'Peak Mem':   peak_mem,
+        'db':           db_name.upper(),
+        'test':         test_type.upper(),
+        'time_s':       elapsed,
+        'throughput':   throughput,
+        'avg_lat_ms':   avg_lat_ms,
+        'p99_lat_ms':   p99_lat_ms,
+        'avg_cpu_pct':  avg_cpu,
+        'peak_cpu_pct': peak_cpu,
+        'avg_mem_mb':   avg_mem,
+        'peak_mem_mb':  peak_mem,
     })
+
+
+def _format_result(r):
+    return {
+        'DB':         r['db'],
+        'Test':       r['test'],
+        'Time (s)':   str(r['time_s']) if r['time_s'] is not None else 'N/A',
+        'Throughput': f"{r['throughput']:.2f} pts/s",
+        'Avg Lat':    f"{r['avg_lat_ms']:.2f} ms",
+        'P99 Lat':    f"{r['p99_lat_ms']:.2f} ms",
+        'Avg CPU':    f"{r['avg_cpu_pct']:.1f}%",
+        'Peak CPU':   f"{r['peak_cpu_pct']:.1f}%",
+        'Avg Mem':    f"{r['avg_mem_mb']:.1f} MB",
+        'Peak Mem':   f"{r['peak_mem_mb']:.1f} MB",
+    }
 
 
 def print_summary():
     cols = ['DB', 'Test', 'Time (s)', 'Throughput', 'Avg Lat', 'P99 Lat', 'Avg CPU', 'Peak CPU', 'Avg Mem', 'Peak Mem']
-    widths = {c: max(len(c), max((len(str(r[c])) for r in RESULTS), default=0)) for c in cols}
+    rows = [_format_result(r) for r in RESULTS]
+    widths = {c: max(len(c), max((len(str(row[c])) for row in rows), default=0)) for c in cols}
 
     sep = '+' + '+'.join('-' * (widths[c] + 2) for c in cols) + '+'
     header = '|' + '|'.join(f' {c:<{widths[c]}} ' for c in cols) + '|'
@@ -198,21 +222,12 @@ def print_summary():
     print('\n' + sep)
     print(header)
     print(sep)
-    for r in RESULTS:
-        print('|' + '|'.join(f' {str(r[c]):<{widths[c]}} ' for c in cols) + '|')
+    for row in rows:
+        print('|' + '|'.join(f' {str(row[c]):<{widths[c]}} ' for c in cols) + '|')
     print(sep + '\n')
 
 
-def _parse_float(s):
-    """Extract the leading float from a formatted string like '9.12 ms' or '2.5%'."""
-    try:
-        return float(re.search(r'[\d.]+', str(s)).group())
-    except (AttributeError, ValueError):
-        return 0.0
-
-
 def write_csv(path):
-    """Write RESULTS to a CSV file compatible with charts.py."""
     import csv
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, 'w', newline='') as f:
@@ -224,15 +239,8 @@ def write_csv(path):
         ])
         for r in RESULTS:
             writer.writerow([
-                r['DB'],
-                r['Test'],
-                _parse_float(r['Time (s)']),
-                _parse_float(r['Throughput']),
-                _parse_float(r['Avg Lat']),
-                _parse_float(r['P99 Lat']),
-                _parse_float(r['Avg CPU']),
-                _parse_float(r['Peak CPU']),
-                _parse_float(r['Avg Mem']),
-                _parse_float(r['Peak Mem']),
+                r['db'], r['test'], r['time_s'] or 0,
+                r['throughput'], r['avg_lat_ms'], r['p99_lat_ms'],
+                r['avg_cpu_pct'], r['peak_cpu_pct'], r['avg_mem_mb'], r['peak_mem_mb'],
             ])
     print(f'[+] Results written to {path}')

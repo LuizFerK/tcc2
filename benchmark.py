@@ -4,7 +4,7 @@ import os
 import argparse
 import subprocess
 
-from benchrunner.config import CONFIG
+import benchrunner.config as cfg
 from benchrunner import influxdb, timescaledb, iotdb, metrics
 
 ALL_TESTS = [
@@ -38,7 +38,7 @@ def main():
 
     args = parser.parse_args()
 
-    CONFIG['scale'] = args.scale
+    cfg.current_scale = args.scale
 
     db_funcs = {
         'influxdb':    influxdb.run,
@@ -52,7 +52,7 @@ def main():
     ensure_docker_running()
 
     print('\n==================================================')
-    print(f' Scale:     {CONFIG["scale"].upper()}')
+    print(f' Scale:     {cfg.current_scale.upper()}')
     print(f' Databases: {", ".join(dbs)}')
     print(f' Tests:     {", ".join(tests)}')
     print('==================================================')

@@ -148,6 +148,11 @@ def save_fig(fig, output_dir, name, strings):
     print(f'{t(strings, "saved")}: {path}')
 
 
+def get_val(df, db, test, col, default=0):
+    row = df[(df['db'] == db) & (df['test'] == test)]
+    return row[col].values[0] if len(row) > 0 else default
+
+
 plt.rcParams.update({'font.size': 10, 'figure.dpi': 130})
 
 
@@ -162,11 +167,7 @@ def chart1_write_throughput(df, output_dir, scale, strings):
     fig, ax = plt.subplots(figsize=(12, 6))
 
     for i, db in enumerate(DBS):
-        vals = [
-            df.loc[(df['db'] == db) & (df['test'] == tst), 'throughput_pts_s'].values[0]
-            if len(df[(df['db'] == db) & (df['test'] == tst)]) > 0 else 0
-            for tst in write_tests
-        ]
+        vals = [get_val(df, db, tst, 'throughput_pts_s') for tst in write_tests]
         bars = ax.bar(x + (i - 1) * width, vals, width, label=DB_LABELS[db],
                       color=DB_COLORS[db], alpha=0.88, edgecolor='white', linewidth=0.5)
         for bar, val in zip(bars, vals):
@@ -278,10 +279,10 @@ def chart4_heatmap(df_a, df_b, scale_a, scale_b, output_dir, strings):
 
     for i, db in enumerate(DBS):
         for j, test in enumerate(tests):
-            s = df_a.loc[(df_a['db'] == db) & (df_a['test'] == test), 'avg_lat_ms']
-            m = df_b.loc[(df_b['db'] == db) & (df_b['test'] == test), 'avg_lat_ms']
-            if len(s) > 0 and len(m) > 0 and s.values[0] > 0:
-                matrix[i, j] = ((m.values[0] - s.values[0]) / s.values[0]) * 100
+            s = get_val(df_a, db, test, 'avg_lat_ms')
+            m = get_val(df_b, db, test, 'avg_lat_ms')
+            if s > 0:
+                matrix[i, j] = ((m - s) / s) * 100
 
     fig, ax = plt.subplots(figsize=(12, 4))
     vmax = matrix.max() or 1
@@ -320,10 +321,10 @@ def chart5_scalability(df_a, df_b, scale_a, scale_b, output_dir, strings):
     for j, test in enumerate(tests):
         ax = axes[j]
         for db in DBS:
-            a = df_a.loc[(df_a['db'] == db) & (df_a['test'] == test), 'avg_lat_ms']
-            b = df_b.loc[(df_b['db'] == db) & (df_b['test'] == test), 'avg_lat_ms']
-            if len(a) > 0 and len(b) > 0:
-                ax.plot([label_a, label_b], [a.values[0], b.values[0]],
+            a = get_val(df_a, db, test, 'avg_lat_ms')
+            b = get_val(df_b, db, test, 'avg_lat_ms')
+            if a > 0 or b > 0:
+                ax.plot([label_a, label_b], [a, b],
                         'o-', color=DB_COLORS[db], label=DB_LABELS[db],
                         linewidth=2.5, markersize=9)
         ax.set_title(test, fontsize=11, fontweight='bold')
@@ -348,14 +349,12 @@ def chart6_p99_consistency(df, output_dir, scale, strings):
 
     for j, test in enumerate(tests):
         ax = axes[j]
-        sub = df[df['test'] == test]
         db_labels, avgs, extras, colors = [], [], [], []
 
         for db in DBS:
-            row = sub[sub['db'] == db]
-            if len(row) > 0:
-                avg = row['avg_lat_ms'].values[0]
-                p99 = row['p99_lat_ms'].values[0]
+            avg = get_val(df, db, test, 'avg_lat_ms')
+            p99 = get_val(df, db, test, 'p99_lat_ms')
+            if avg > 0 or p99 > 0:
                 db_labels.append(DB_LABELS[db])
                 avgs.append(avg)
                 extras.append(max(p99 - avg, 0))
