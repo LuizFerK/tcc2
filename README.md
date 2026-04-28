@@ -48,7 +48,6 @@ scripts/
 
 ## Tech Stack
 
-+---------------------+-----------------------------------------------------------------------+
 | Layer               | Technology                                                            |
 |---------------------|-----------------------------------------------------------------------|
 | Workload generator  | [iot-benchmark](https://github.com/thulab/iot-benchmark) (Java, Maven)|
@@ -58,7 +57,6 @@ scripts/
 | IoTDB               | apache/iotdb:1.3.0-standalone                                         |
 | InfluxDB            | influxdb:2.7-alpine                                                   |
 | TimescaleDB         | timescale/timescaledb:latest-pg15                                     |
-+---------------------+-----------------------------------------------------------------------+
 
 ---
 
@@ -114,24 +112,20 @@ python3 benchmark.py --db timescaledb --scale medium
 
 ### Options
 
-+-----------+---------+--------------------------------------------------------+
 | Flag      | Default | Values                                                 |
 |-----------|---------|--------------------------------------------------------|
 | `--db`    | `all`   | `all`, `influxdb`, `timescaledb`, `iotdb`              |
 | `--scale` | `small` | `small` (~5 min), `medium` (~30 min), `large` (~2 h)   |
-+-----------+---------+--------------------------------------------------------+
 
 `--test` (default `all`): `all`, `write`, `out-of-order`, `batch-small`, `batch-large`, `read`, `latest-point`, `downsample`, `range-query`, `value-filter`
 
 ### Scale parameters
 
-+--------+---------+---------+---------+------------+-------+
 | Scale  | Clients | Devices | Sensors | Batch size | Loops |
 |--------|---------|---------|---------|------------|-------|
 | small  | 5       | 10      | 10      | 100        | 1000  |
 | medium | 5       | 10      | 10      | 100        | 5000  |
 | large  | 10      | 50      | 20      | 100        | 5000  |
-+--------+---------+---------+---------+------------+-------+
 
 ---
 
@@ -141,18 +135,15 @@ When `--test all` is used, tests run in this order: write variants first (each c
 
 ### Write tests
 
-+----------------+-----------------------------------------------------------------------------------------------------------------------------------------------+
 | Test           | What it measures                                                                                                                              |
 |----------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
 | `write`        | Baseline sequential ingestion - ordered timestamps, default batch size                                                                        |
 | `out-of-order` | 20% late-arriving data (Poisson distribution) - simulates network-delayed IoT sensors; reveals write-amplification from out-of-order handling |
 | `batch-small`  | `BATCH_SIZE=1` - one write request per data point; isolates per-request protocol overhead (HTTP round-trip, WAL flush, Thrift call)           |
 | `batch-large`  | `BATCH_SIZE=1000` - large batches; tests bulk-loading efficiency and where each database's batching ceiling lies                              |
-+----------------+-----------------------------------------------------------------------------------------------------------------------------------------------+
 
 ### Read tests
 
-+----------------+-----------------------------------------------+--------------------------------------------------------------------------------------------+
 | Test           | Queries active                                | What it measures                                                                           |
 |----------------|-----------------------------------------------|--------------------------------------------------------------------------------------------|
 | `read`         | All 10 supported types                        | Comprehensive read baseline - all analytics patterns equally weighted                      |
@@ -160,7 +151,6 @@ When `--test all` is used, tests run in this order: write variants first (each c
 | `downsample`   | `GROUP_BY`                                    | Dashboard aggregation - time-bucketed averages; tests native downsampling push-down        |
 | `range-query`  | `TIME_RANGE`                                  | Bulk data export - sequential scan over a time window; tests decompression throughput      |
 | `value-filter` | `VALUE_RANGE`, `AGG_VALUE`, `AGG_RANGE_VALUE` | Threshold alerting - "readings above X"; tests predicate pushdown into the storage layer   |
-+----------------+-----------------------------------------------+--------------------------------------------------------------------------------------------+
 
 ---
 
@@ -168,7 +158,6 @@ When `--test all` is used, tests run in this order: write variants first (each c
 
 **Column definitions**
 
-+--------------+------------------------------------------------------------------------------------------------------------+
 | Column       | Meaning                                                                                                    |
 |--------------|------------------------------------------------------------------------------------------------------------|
 | Time (s)     | Wall-clock duration of the entire benchmark run                                                            |
@@ -177,14 +166,11 @@ When `--test all` is used, tests run in this order: write variants first (each c
 | P99 Lat      | 99th-percentile latency — 99% of operations completed faster than this value; the remaining 1% took longer |
 | Avg/Peak CPU | Average and maximum CPU usage of the database container sampled every second via `docker stats`            |
 | Avg/Peak Mem | Average and maximum RSS of the database container over the same interval                                   |
-+--------------+------------------------------------------------------------------------------------------------------------+
 
 ### Small scale
 
-```
-+-------------+--------------+----------+-------------------+-----------+------------+---------+----------+------------+------------+
 | DB          | Test         | Time (s) | Throughput        | Avg Lat   | P99 Lat    | Avg CPU | Peak CPU | Avg Mem    | Peak Mem   |
-+-------------+--------------+----------+-------------------+-----------+------------+---------+----------+------------+------------+
+|-------------|--------------|----------|-------------------|-----------|------------|---------|----------|------------|------------|
 | INFLUXDB    | BATCH-SMALL  | 19.35    | 5168.85 pts/s     | 9.12 ms   | 14.74 ms   | 2.5%    | 4.3%     | 118.9 MB   | 125.5 MB   |
 | INFLUXDB    | BATCH-LARGE  | 45.58    | 2193904.61 pts/s  | 22.00 ms  | 205.07 ms  | 22.0%   | 32.7%    | 596.7 MB   | 926.0 MB   |
 | INFLUXDB    | OUT-OF-ORDER | 36.66    | 272760.59 pts/s   | 17.72 ms  | 45.44 ms   | 5.9%    | 13.6%    | 318.8 MB   | 925.0 MB   |
@@ -212,15 +198,11 @@ When `--test all` is used, tests run in this order: write variants first (each c
 | IOTDB       | DOWNSAMPLE   | 2.19     | 29697.05 pts/s    | 1.07 ms   | 3.01 ms    | 4.8%    | 13.8%    | 12554.2 MB | 12554.2 MB |
 | IOTDB       | RANGE-QUERY  | 2.48     | 100916.37 pts/s   | 1.35 ms   | 3.81 ms    | 5.1%    | 14.3%    | 12554.2 MB | 12554.2 MB |
 | IOTDB       | VALUE-FILTER | 5.03     | 17504.97 pts/s    | 3.79 ms   | 14.22 ms   | 17.4%   | 42.3%    | 12556.8 MB | 12564.5 MB |
-+-------------+--------------+----------+-------------------+-----------+------------+---------+----------+------------+------------+
-```
 
 ### Medium scale
 
-```
-+-------------+--------------+----------+-------------------+-----------+------------+---------+----------+------------+------------+
 | DB          | Test         | Time (s) | Throughput        | Avg Lat   | P99 Lat    | Avg CPU | Peak CPU | Avg Mem    | Peak Mem   |
-+-------------+--------------+----------+-------------------+-----------+------------+---------+----------+------------+------------+
+|-------------|--------------|----------|-------------------|-----------|------------|---------|----------|------------|------------|
 | INFLUXDB    | BATCH-SMALL  | 106.88   | 4678.00 pts/s     | 10.56 ms  | 36.41 ms   | 4.5%    | 7.0%     | 192.4 MB   | 207.7 MB   |
 | INFLUXDB    | BATCH-LARGE  | 240.45   | 2079443.35 pts/s  | 23.81 ms  | 238.84 ms  | 23.7%   | 36.8%    | 1812.1 MB  | 3152.9 MB  |
 | INFLUXDB    | OUT-OF-ORDER | 200.75   | 249071.69 pts/s   | 19.88 ms  | 102.65 ms  | 7.6%    | 21.8%    | 693.3 MB   | 3145.7 MB  |
@@ -248,15 +230,11 @@ When `--test all` is used, tests run in this order: write variants first (each c
 | IOTDB       | DOWNSAMPLE   | 7.58     | 42888.90 pts/s    | 1.26 ms   | 4.06 ms    | 17.2%   | 35.0%    | 12707.8 MB | 12707.8 MB |
 | IOTDB       | RANGE-QUERY  | 8.53     | 146541.98 pts/s   | 1.46 ms   | 4.40 ms    | 17.6%   | 32.9%    | 12707.8 MB | 12707.8 MB |
 | IOTDB       | VALUE-FILTER | 98.46    | 4366.15 pts/s     | 19.17 ms  | 73.48 ms   | 38.5%   | 41.5%    | 12715.2 MB | 12718.1 MB |
-+-------------+--------------+----------+-------------------+-----------+------------+---------+----------+------------+------------+
-```
 
 ### Large scale
 
-```
-+-------------+--------------+----------+-------------------+-----------+------------+---------+----------+------------+------------+
 | DB          | Test         | Time (s) | Throughput        | Avg Lat   | P99 Lat    | Avg CPU | Peak CPU | Avg Mem    | Peak Mem   |
-+-------------+--------------+----------+-------------------+-----------+------------+---------+----------+------------+------------+
+|-------------|--------------|----------|-------------------|-----------|------------|---------|----------|------------|------------|
 | INFLUXDB    | BATCH-SMALL  | 311.34   | 16059.65 pts/s    | 12.38 ms  | 40.09 ms   | 10.5%   | 16.3%    | 317.4 MB   | 393.6 MB   |
 | INFLUXDB    | BATCH-LARGE  | 1335.88  | 3742857.63 pts/s  | 52.96 ms  | 374.60 ms  | 44.4%   | 74.1%    | 1607.4 MB  | 2573.3 MB  |
 | INFLUXDB    | OUT-OF-ORDER | 657.13   | 760888.17 pts/s   | 26.08 ms  | 254.05 ms  | 25.5%   | 51.1%    | 1012.2 MB  | 1494.0 MB  |
@@ -284,8 +262,6 @@ When `--test all` is used, tests run in this order: write variants first (each c
 | IOTDB       | DOWNSAMPLE   | 9.94     | 65411.74 pts/s    | 1.74 ms   | 4.84 ms    | 47.3%   | 79.7%    | 15820.8 MB | 15820.8 MB |
 | IOTDB       | RANGE-QUERY  | 7.47     | 334858.48 pts/s   | 1.25 ms   | 2.98 ms    | 38.4%   | 61.7%    | 15820.8 MB | 15820.8 MB |
 | IOTDB       | VALUE-FILTER | 113.56   | 7640.84 pts/s     | 22.29 ms  | 76.59 ms   | 76.6%   | 88.7%    | 15892.0 MB | 15933.4 MB |
-+-------------+--------------+----------+-------------------+-----------+------------+---------+----------+------------+------------+
-```
 
 ---
 
@@ -301,13 +277,11 @@ IoTDB dominates write throughput at every batch size. The gap is explained by th
 
 **Batch size sensitivity.** The `batch-small` vs `batch-large` comparison shows this clearly:
 
-+-------------+-------------------+-------------------+--------+
 | DB          | BATCH-SMALL pts/s | BATCH-LARGE pts/s |  Ratio |
 |-------------|-------------------|-------------------|--------|
 | InfluxDB    |             5,169 |         2,193,905 |   424x |
 | TimescaleDB |             4,455 |           160,547 |    36x |
 | IoTDB       |            24,268 |        13,897,643 |   573x |
-+-------------+-------------------+-------------------+--------+
 
 InfluxDB and IoTDB are extremely sensitive to batch size because of per-request overhead (HTTP round-trip and Thrift call respectively). TimescaleDB's lower ratio reflects PostgreSQL's WAL flush cost dominating even for small batches — the per-row overhead is already high, so larger batches help less.
 
@@ -319,25 +293,21 @@ The `Throughput (pts/s)` column for read tests sums the point counts of all acti
 
 **Value-filter queries are the clearest differentiator.** Finding records that match a value predicate (`sensor > threshold`) cannot be answered from time-based indexes alone. Each database must either do a full chunk scan or maintain a secondary index:
 
-+-------------+----------------------+----------------------+
 | DB          | Value-filter avg lat | Value-filter P99 lat |
 |-------------|----------------------|----------------------|
 | IoTDB       |              3.79 ms |             14.22 ms |
 | TimescaleDB |             40.12 ms |            251.06 ms |
 | InfluxDB    |             89.85 ms |            341.34 ms |
-+-------------+----------------------+----------------------+
 
 IoTDB stores min/max statistics per TsFile chunk and uses them to skip chunks that cannot contain matching values. InfluxDB has no equivalent — it scans all TSM blocks. TimescaleDB relies on PostgreSQL's BRIN index, which gives partial pruning but still scans substantially more data than IoTDB's statistics-based approach.
 
 **Downsampling (GROUP BY time buckets)** is where TimescaleDB shows strength relative to InfluxDB despite its write disadvantage:
 
-+-------------+--------------------+
 | DB          | Downsample avg lat |
 |-------------|--------------------|
 | TimescaleDB |            0.72 ms |
 | IoTDB       |            1.07 ms |
 | InfluxDB    |            6.85 ms |
-+-------------+--------------------+
 
 TimescaleDB's `time_bucket()` aggregation runs entirely inside the PostgreSQL executor with its hot shared_buffers cache. InfluxDB's Flux aggregation engine has higher per-query overhead.
 
@@ -345,13 +315,11 @@ TimescaleDB's `time_bucket()` aggregation runs entirely inside the PostgreSQL ex
 
 The `pts/s` figure for `latest-point` appears low compared to `range-query` because the two queries return fundamentally different amounts of data per call: a range query returns hundreds of points per call (high pts/s), while latest-point returns exactly one point per call (pts/s ≈ queries/second). **Latency** is the correct metric here:
 
-+-------------+----------------------+---------------------+
 | DB          | Latest-point avg lat | Range-query avg lat |
 |-------------|----------------------|---------------------|
 | TimescaleDB |          **0.50 ms** |             0.64 ms |
 | IoTDB       |          **0.78 ms** |             1.35 ms |
 | InfluxDB    |         **10.85 ms** |             6.50 ms |
-+-------------+----------------------+---------------------+
 
 TimescaleDB and IoTDB are actually *faster* for latest-point than for range queries — TimescaleDB via a `SELECT ... ORDER BY time DESC LIMIT 1` reverse B-tree scan, and IoTDB via a dedicated in-memory last-value cache that bypasses TsFile entirely. InfluxDB has no equivalent shortcut and must seek to the tail of each series in its TSM blocks, making it the only database where latest-point is slower than a range scan.
 
@@ -363,7 +331,6 @@ TimescaleDB's 5.5 GB figure requires context. PostgreSQL's `shared_buffers` is s
 
 ### Summary
 
-+-----------------------------------+-------------+-------------------------------------------+
 | Workload                          | Best DB     | Reason                                    |
 |-----------------------------------|-------------|-------------------------------------------|
 | High-rate sequential ingestion    | IoTDB       | Binary tablet protocol + memory buffering |
@@ -375,7 +342,6 @@ TimescaleDB's 5.5 GB figure requires context. PostgreSQL's `shared_buffers` is s
 | Threshold alerting (value filter) | IoTDB       | Chunk statistics for early pruning        |
 | Real-time last-value lookup       | TimescaleDB | Sub-millisecond reverse index scan        |
 | Memory efficiency                 | InfluxDB    | TSM cache capped at 1 GB by default       |
-+-----------------------------------+-------------+-------------------------------------------+
 
 IoTDB is the clear winner for write-heavy workloads but requires substantial memory and is purpose-built for the IoT domain. TimescaleDB trades raw write speed for SQL compatibility, mature tooling, and surprisingly strong read performance once data is cached. InfluxDB occupies the middle ground: better write throughput than TimescaleDB, better memory efficiency than IoTDB, but weaker on complex read patterns.
 
@@ -393,13 +359,11 @@ Running the same workload with 5× more loops (5,000 vs 1,000) confirms most of 
 
 **IoTDB's value-filter chunk-statistics advantage is a constant factor, not asymptotic.** All three databases scale roughly linearly with data size for value-filter:
 
-+-------------+---------------+----------------+-------+---------------+
 | DB          | Small avg lat | Medium avg lat | Ratio | Expected (5×) |
 |-------------|---------------|----------------|-------|---------------|
 | IoTDB       |     3.79 ms   |    19.17 ms    |  5.1× |     5×        |
 | TimescaleDB |    40.12 ms   |   175.07 ms    |  4.4× |     5×        |
 | InfluxDB    |    89.85 ms   |   396.15 ms    |  4.4× |     5×        |
-+-------------+---------------+----------------+-------+---------------+
 
 IoTDB remains ~5–20× faster in absolute terms, but the gap does not grow with scale. The chunk-statistics skip is a pruning optimisation, not an index.
 
@@ -416,13 +380,11 @@ IoTDB remains ~5–20× faster in absolute terms, but the gap does not grow with
 
 **InfluxDB latest-point latency scales with dataset size; TimescaleDB and IoTDB do not.**
 
-+-------------+---------------+----------------+
 | DB          | Small avg lat | Medium avg lat |
 |-------------|---------------|----------------|
 | InfluxDB    |   10.85 ms    |    23.18 ms    |
 | IoTDB       |    0.78 ms    |     0.75 ms    |
 | TimescaleDB |    0.50 ms    |     0.53 ms    |
-+-------------+---------------+----------------+
 
 TimescaleDB's reverse B-tree scan and IoTDB's in-memory last-value cache are O(1) with respect to total stored data. InfluxDB must seek to the end of each series' TSM file blocks, and that seek cost grows as more files accumulate. In any long-running deployment this gap will compound.
 
@@ -447,45 +409,37 @@ The large scale (10 clients, 50 devices, 20 sensors, 5,000 loops) contains rough
 
 **IoTDB write dominance widens.** The absolute gap grows at every scale:
 
-+-------------+-------------+--------------+-------------+
 | DB          | Small pts/s | Medium pts/s | Large pts/s |
 |-------------|-------------|--------------|-------------|
 | IoTDB       |   2,130,911 |    6,378,193 |  17,511,476 |
 | InfluxDB    |     439,381 |      363,669 |   1,178,162 |
 | TimescaleDB |     133,677 |      126,131 |     358,761 |
-+-------------+-------------+--------------+-------------+
 
 IoTDB WRITE throughput scales superlinearly with both dataset size and client count, reflecting continued JIT saturation of the Thrift write path. The ratio over InfluxDB is consistent (~5–17× depending on scale); the ratio over TimescaleDB grows from 16× to 50× between small and large.
 
 **TimescaleDB downsample and latest-point remain constant-latency across all three scales.**
 
-+-------------+------------------+-------------------+------------------+
 | DB          | Downsample small | Downsample medium | Downsample large |
 |-------------|------------------|-------------------|------------------|
 | TimescaleDB |      0.72 ms     |       0.67 ms     |      0.74 ms     |
 | IoTDB       |      1.07 ms     |       1.26 ms     |      1.74 ms     |
 | InfluxDB    |      6.85 ms     |       7.17 ms     |      9.91 ms     |
-+-------------+------------------+-------------------+------------------+
 
-+-------------+--------------------+---------------------+--------------------+
 | DB          | Latest-point small | Latest-point medium | Latest-point large |
 |-------------|--------------------|---------------------|--------------------|
 | TimescaleDB |       0.50 ms      |        0.53 ms      |       0.60 ms      |
 | IoTDB       |       0.78 ms      |        0.75 ms      |       0.64 ms      |
 | InfluxDB    |      10.85 ms      |       23.18 ms      |      34.48 ms      |
-+-------------+--------------------+---------------------+--------------------+
 
 TimescaleDB downsample stays sub-millisecond across 100× data growth. The `time_bucket()` result is fully validated as cache-resident and query-window-bounded. InfluxDB latest-point shows a clean linear progression (10.85 → 23.18 → 34.48 ms), confirming the TSM tail-seek cost grows proportionally with stored files. This is now a three-point regression with no ambiguity.
 
 **IoTDB's value-filter advantage becomes sublinear, not just a constant factor.** This is the biggest revision from the medium-scale analysis, which only showed a constant-factor difference:
 
-+-------------+---------------+----------------+---------------+-------------------+------------+
 | DB          | Small avg lat | Medium avg lat | Large avg lat | Small→Large ratio | Data ratio |
 |-------------|---------------|----------------|---------------|-------------------|------------|
 | IoTDB       |     3.79 ms   |    19.17 ms    |    22.29 ms   |        5.9×       |   100×     |
 | TimescaleDB |    40.12 ms   |   175.07 ms    |   629.15 ms   |       15.7×       |   100×     |
 | InfluxDB    |    89.85 ms   |   396.15 ms    |   537.48 ms   |        6.0×       |   100×     |
-+-------------+---------------+----------------+---------------+-------------------+------------+
 
 IoTDB's value-filter latency grew only 5.9× for 100× more data. At medium scale it appeared linear; at large scale it breaks from linearity. IoTDB's chunk min/max statistics skip increasingly large fractions of the dataset as the data grows denser — the pruning ratio improves with scale. TimescaleDB grows 15.7×, worse than linear, consistent with BRIN index becoming less effective as more non-contiguous pages must be read. InfluxDB at 6.0× is surprisingly sublinear too, likely because the TSM block structure allows skipping entire files based on time-range metadata even for value predicates.
 
@@ -503,7 +457,6 @@ IoTDB's value-filter latency grew only 5.9× for 100× more data. At medium scal
 
 ### Final summary across all scales
 
-+---------------------------------------------------------------+--------------------------------------------------------------------------------+
 | Claim from original analysis                                  | Status after large-scale data                                                  |
 |---------------------------------------------------------------|--------------------------------------------------------------------------------|
 | IoTDB dominates write throughput                              | **Confirmed and strengthened** — gap widens to 50× over TimescaleDB            |
@@ -514,7 +467,6 @@ IoTDB's value-filter latency grew only 5.9× for 100× more data. At medium scal
 | InfluxDB memory is ~300–900 MB                                | **Wrong** — peaks at 2.6 GB at large BATCH-LARGE                               |
 | IoTDB memory is a fixed pre-allocation                        | **Overstated** — heap grows to ~15.5 GB at large scale                         |
 | TimescaleDB P99 tail latency grows with data                  | **Confirmed and severe** — 275 ms → 1,672 ms → 4,232 ms across scales          |
-+---------------------------------------------------------------+--------------------------------------------------------------------------------+
 
 ---
 
@@ -531,23 +483,19 @@ IoTDB's value-filter latency grew only 5.9× for 100× more data. At medium scal
 
 ### Host machine
 
-+-----------+----------------------------------------------------------------------------+
 | Component | Details                                                                    |
 |-----------|----------------------------------------------------------------------------|
 | CPU       | Intel Core i5-11400F (6 cores / 12 threads, 2.60 GHz base, 4.40 GHz boost) |
 | RAM       | 32 GB                                                                      |
 | Disk      | 500 GB                                                                     |
 | OS        | NixOS (Linux 6.12)                                                         |
-+-----------+----------------------------------------------------------------------------+
 
 ### Docker containers
 
 All three containers run on the same host with no explicit CPU or memory limits set — each competes for the full machine resources during its benchmark run.
 
-+-------------+-----------------------------------------------------+
 | Container   | Image                                               |
 |-------------|-----------------------------------------------------|
 | IoTDB       | `apache/iotdb:1.3.0-standalone`                     |
 | InfluxDB    | `influxdb:2.7-alpine`                               |
 | TimescaleDB | `timescale/timescaledb:latest-pg15` (PostgreSQL 15) |
-+-------------+-----------------------------------------------------+
