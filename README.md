@@ -166,6 +166,19 @@ When `--test all` is used, tests run in this order: write variants first (each c
 
 ## Results
 
+**Column definitions**
+
++--------------+------------------------------------------------------------------------------------------------------------+
+| Column       | Meaning                                                                                                    |
+|--------------|------------------------------------------------------------------------------------------------------------|
+| Time (s)     | Wall-clock duration of the entire benchmark run                                                            |
+| Throughput   | Points ingested or returned per second, as reported by iot-benchmark                                       |
+| Avg Lat      | Mean per-operation latency across all client threads                                                       |
+| P99 Lat      | 99th-percentile latency — 99% of operations completed faster than this value; the remaining 1% took longer |
+| Avg/Peak CPU | Average and maximum CPU usage of the database container sampled every second via `docker stats`            |
+| Avg/Peak Mem | Average and maximum RSS of the database container over the same interval                                   |
++--------------+------------------------------------------------------------------------------------------------------------+
+
 ### Small scale
 
 ```
@@ -346,6 +359,8 @@ TimescaleDB and IoTDB are actually *faster* for latest-point than for range quer
 
 IoTDB's dominant write throughput comes with a significant cost: it occupies ~12 GB of RAM throughout the run, compared to InfluxDB's ~300–900 MB and TimescaleDB's ~5.5 GB. IoTDB buffers all incoming tablets in a JVM heap before flushing columnar TsFile segments to disk. This is an architectural trade-off — high write throughput in exchange for high memory pressure. In memory-constrained IoT gateway deployments this would be a disqualifying factor.
 
+TimescaleDB's 5.5 GB figure requires context. PostgreSQL's `shared_buffers` is set to the default 128 MB, yet `docker stats` reports ~5.4 GB from the very first test. The gap is the Linux OS page cache: PostgreSQL bypasses `shared_buffers` for large sequential scans and relies heavily on the kernel's file system cache, which the container's cgroup accounts toward its RSS. After the first few tests warm the file system cache, most of TimescaleDB's reported memory is OS-managed page cache rather than database-controlled buffers. This inflates the comparison: InfluxDB and IoTDB manage their own in-process caches (TSM cache and JVM heap respectively), so their `docker stats` numbers reflect real application memory more directly.
+
 ### Summary
 
 +-----------------------------------+-------------+-------------------------------------------+
@@ -354,7 +369,7 @@ IoTDB's dominant write throughput comes with a significant cost: it occupies ~12
 | High-rate sequential ingestion    | IoTDB       | Binary tablet protocol + memory buffering |
 | Large-batch bulk loading          | IoTDB       | Vectorised columnar write path            |
 | Single-point streaming (BATCH=1)  | IoTDB       | Lower Thrift overhead vs HTTP/WAL         |
-| Out-of-order tolerance            | InfluxDB    | TSM handles disorder cheaply              |
+| Out-of-order tolerance            | InfluxDB    | Higher absolute OOO pts/s at every scale  |
 | Dashboard downsampling            | TimescaleDB | time_bucket() in hot shared_buffers       |
 | Bulk time-range export            | TimescaleDB | Chunk pruning + warm OS page cache        |
 | Threshold alerting (value filter) | IoTDB       | Chunk statistics for early pruning        |
@@ -390,7 +405,10 @@ IoTDB remains ~5–20× faster in absolute terms, but the gap does not grow with
 
 ### False positives corrected
 
-**"InfluxDB handles out-of-order writes nearly as fast as sequential" — this was imprecise.** The actual drop is 38% at small scale (272 K vs 439 K pts/s) and 32% at medium (249 K vs 363 K pts/s). That is a consistent and significant overhead, not a negligible one. The correct statement is that InfluxDB tolerates out-of-order writes with moderate throughput cost, which is still markedly better than IoTDB's TSM compaction path and roughly equivalent to TimescaleDB.
+**"InfluxDB handles out-of-order writes nearly as fast as sequential" — this was imprecise.** The actual drop is 38% at small scale (272 K vs 439 K pts/s) and 32% at medium (249 K vs 363 K pts/s). That is a consistent and significant overhead, not a negligible one. The correct statement is that InfluxDB tolerates out-of-order writes with moderate throughput cost, which is markedly better than IoTDB's TSM compaction path. Two separate metrics matter here and they point in different directions:
+
+- **Absolute OOO throughput**: InfluxDB leads at every scale (272 K vs 132 K pts/s at small), so it is the better choice when raw ingestion rate under disorder matters.
+- **Relative OOO degradation**: TimescaleDB is more tolerant — it loses less than 1% throughput from OOO at small and medium scales, versus InfluxDB's 32–38%. TimescaleDB's B-tree index updates are order-independent, so late-arriving rows incur no extra cost until the hypertable grows large enough to trigger chunk decompression (which only surfaces at large scale, where TimescaleDB's OOO penalty reaches 23%).
 
 **InfluxDB's memory footprint was understated.** The small-scale description of "~300–900 MB" and the claim that the TSM cache is "capped at 1 GB by default" are misleading at scale. At medium scale, batch-large and out-of-order peak at **3.1 GB**, and the summary table's "memory efficiency" win for InfluxDB only holds for the small write test. Total process RSS includes WAL buffers, the series index, and Go runtime overhead well beyond the TSM cache limit.
 
@@ -416,7 +434,7 @@ TimescaleDB's reverse B-tree scan and IoTDB's in-memory last-value cache are O(1
 
 The summary table from the small-scale analysis stands, with two corrections:
 
-- **Out-of-order tolerance**: InfluxDB is better than TimescaleDB but the advantage is moderate (~30–38% throughput penalty), not negligible.
+- **Out-of-order tolerance**: InfluxDB delivers higher absolute OOO throughput at every scale. However, TimescaleDB has a smaller *relative* degradation from OOO (<1% at small/medium, 23% at large) compared to InfluxDB's consistent 32–38% drop. The summary table winner (InfluxDB) is correct for absolute pts/s but should not be read as "handles disorder more gracefully."
 - **Memory efficiency**: InfluxDB wins only at small scale; at medium scale its peak RSS (3.1 GB) is comparable to or worse than TimescaleDB's starting footprint.
 
 ---
@@ -429,37 +447,45 @@ The large scale (10 clients, 50 devices, 20 sensors, 5,000 loops) contains rough
 
 **IoTDB write dominance widens.** The absolute gap grows at every scale:
 
++-------------+-------------+--------------+-------------+
 | DB          | Small pts/s | Medium pts/s | Large pts/s |
-|-------------|------------:|-------------:|------------:|
+|-------------|-------------|--------------|-------------|
 | IoTDB       |   2,130,911 |    6,378,193 |  17,511,476 |
 | InfluxDB    |     439,381 |      363,669 |   1,178,162 |
 | TimescaleDB |     133,677 |      126,131 |     358,761 |
++-------------+-------------+--------------+-------------+
 
-IoTDB WRITE throughput scales superlinearly with both dataset size and client count, reflecting continued JIT saturation of the Thrift write path. The ratio over InfluxDB is consistent (~3–17× depending on scale); the ratio over TimescaleDB grows from 16× to 50× between small and large.
+IoTDB WRITE throughput scales superlinearly with both dataset size and client count, reflecting continued JIT saturation of the Thrift write path. The ratio over InfluxDB is consistent (~5–17× depending on scale); the ratio over TimescaleDB grows from 16× to 50× between small and large.
 
 **TimescaleDB downsample and latest-point remain constant-latency across all three scales.**
 
++-------------+------------------+-------------------+------------------+
 | DB          | Downsample small | Downsample medium | Downsample large |
-|-------------|:----------------:|:-----------------:|:----------------:|
+|-------------|------------------|-------------------|------------------|
 | TimescaleDB |      0.72 ms     |       0.67 ms     |      0.74 ms     |
 | IoTDB       |      1.07 ms     |       1.26 ms     |      1.74 ms     |
 | InfluxDB    |      6.85 ms     |       7.17 ms     |      9.91 ms     |
++-------------+------------------+-------------------+------------------+
 
++-------------+--------------------+---------------------+--------------------+
 | DB          | Latest-point small | Latest-point medium | Latest-point large |
-|-------------|:-----------------:|:-------------------:|:-----------------:|
-| TimescaleDB |       0.50 ms     |        0.53 ms      |       0.60 ms     |
-| IoTDB       |       0.78 ms     |        0.75 ms      |       0.64 ms     |
-| InfluxDB    |      10.85 ms     |       23.18 ms      |      34.48 ms     |
+|-------------|--------------------|---------------------|--------------------|
+| TimescaleDB |       0.50 ms      |        0.53 ms      |       0.60 ms      |
+| IoTDB       |       0.78 ms      |        0.75 ms      |       0.64 ms      |
+| InfluxDB    |      10.85 ms      |       23.18 ms      |      34.48 ms      |
++-------------+--------------------+---------------------+--------------------+
 
 TimescaleDB downsample stays sub-millisecond across 100× data growth. The `time_bucket()` result is fully validated as cache-resident and query-window-bounded. InfluxDB latest-point shows a clean linear progression (10.85 → 23.18 → 34.48 ms), confirming the TSM tail-seek cost grows proportionally with stored files. This is now a three-point regression with no ambiguity.
 
 **IoTDB's value-filter advantage becomes sublinear, not just a constant factor.** This is the biggest revision from the medium-scale analysis, which only showed a constant-factor difference:
 
++-------------+---------------+----------------+---------------+-------------------+------------+
 | DB          | Small avg lat | Medium avg lat | Large avg lat | Small→Large ratio | Data ratio |
-|-------------|:-------------:|:--------------:|:-------------:|:-----------------:|:----------:|
+|-------------|---------------|----------------|---------------|-------------------|------------|
 | IoTDB       |     3.79 ms   |    19.17 ms    |    22.29 ms   |        5.9×       |   100×     |
 | TimescaleDB |    40.12 ms   |   175.07 ms    |   629.15 ms   |       15.7×       |   100×     |
 | InfluxDB    |    89.85 ms   |   396.15 ms    |   537.48 ms   |        6.0×       |   100×     |
++-------------+---------------+----------------+---------------+-------------------+------------+
 
 IoTDB's value-filter latency grew only 5.9× for 100× more data. At medium scale it appeared linear; at large scale it breaks from linearity. IoTDB's chunk min/max statistics skip increasingly large fractions of the dataset as the data grows denser — the pruning ratio improves with scale. TimescaleDB grows 15.7×, worse than linear, consistent with BRIN index becoming less effective as more non-contiguous pages must be read. InfluxDB at 6.0× is surprisingly sublinear too, likely because the TSM block structure allows skipping entire files based on time-range metadata even for value predicates.
 
@@ -469,7 +495,7 @@ IoTDB's value-filter latency grew only 5.9× for 100× more data. At medium scal
 
 **TimescaleDB becomes CPU-saturated on reads at large scale.** The mixed `READ` workload averages **97.7% CPU** (peak 99.7%), and value-filter averages **98.3%** (peak 100%). P99 latency for `READ` reaches 4,232 ms. This is not a storage bottleneck — it is the query executor running out of compute. At this point adding more RAM or faster disks would not help; only a stronger CPU or horizontal sharding would. InfluxDB reaches 85% CPU on read but does not saturate. IoTDB peaks at 70% for the same workload.
 
-**IoTDB batch-small throughput breaks the expected ceiling.** Across scales: 24,268 → 79,923 → **494,743 pts/s**, with average latency *decreasing* from 1.54 ms to 0.35 ms as load increases. This is only possible if the JVM JIT compiler is progressively optimising the hot Thrift serialisation path during the run. At large scale, the benchmark runs long enough for the JIT to reach peak compilation, making the large-scale batch-small numbers the most representative of IoTDB's steady-state single-point ingestion throughput.
+**IoTDB batch-small throughput breaks the expected ceiling.** Across scales: 24,268 → 79,923 → **494,743 pts/s**, with average latency *decreasing* from 1.54 ms to 0.35 ms as load increases. (Note: the small-scale run also produces an anomalous P99 of 1.19 ms — lower than its own 1.54 ms average — which is statistically only possible if a small fraction of operations had very large outliers, likely JVM GC pauses, pulling the average above the 99th percentile on a short run. This artifact does not appear at medium or large scale and does not affect the throughput figures.) This is only possible if the JVM JIT compiler is progressively optimising the hot Thrift serialisation path during the run. At large scale, the benchmark runs long enough for the JIT to reach peak compilation, making the large-scale batch-small numbers the most representative of IoTDB's steady-state single-point ingestion throughput.
 
 **TimescaleDB batch-large hits the benchmark timeout at large scale** (exactly 3,600 s). The P99 of 1,639 ms and average latency of 473 ms reflect a database under sustained WAL pressure: with 50 devices and 100-row batches, each write touches 50 hypertable partitions and triggers 50 WAL flushes, and the cumulative cost exhausts the time budget before the full loop count completes.
 
@@ -477,16 +503,18 @@ IoTDB's value-filter latency grew only 5.9× for 100× more data. At medium scal
 
 ### Final summary across all scales
 
-| Claim from original analysis | Status after large-scale data |
-|------------------------------|-------------------------------|
-| IoTDB dominates write throughput | **Confirmed and strengthened** — gap widens to 50× over TimescaleDB |
-| TimescaleDB downsample is cache-resident and constant-latency | **Confirmed** — sub-ms across 100× data growth |
-| TimescaleDB/IoTDB latest-point is O(1) w.r.t. dataset size | **Confirmed** — both stay flat; InfluxDB shows clean linear growth |
-| IoTDB value-filter advantage is a constant factor | **Partially wrong** — at large scale it becomes sublinear (5.9× for 100× data) |
-| TimescaleDB OOO cost is negligible | **Wrong at large scale** — 23% penalty emerges from chunk decompression |
-| InfluxDB memory is ~300–900 MB | **Wrong** — peaks at 2.6 GB at large BATCH-LARGE |
-| IoTDB memory is a fixed pre-allocation | **Overstated** — heap grows to ~15.5 GB at large scale |
-| TimescaleDB P99 tail latency grows with data | **Confirmed and severe** — 275 ms → 1,672 ms → 4,232 ms across scales |
++---------------------------------------------------------------+--------------------------------------------------------------------------------+
+| Claim from original analysis                                  | Status after large-scale data                                                  |
+|---------------------------------------------------------------|--------------------------------------------------------------------------------|
+| IoTDB dominates write throughput                              | **Confirmed and strengthened** — gap widens to 50× over TimescaleDB            |
+| TimescaleDB downsample is cache-resident and constant-latency | **Confirmed** — sub-ms across 100× data growth                                 |
+| TimescaleDB/IoTDB latest-point is O(1) w.r.t. dataset size    | **Confirmed** — both stay flat; InfluxDB shows clean linear growth             |
+| IoTDB value-filter advantage is a constant factor             | **Partially wrong** — at large scale it becomes sublinear (5.9× for 100× data) |
+| TimescaleDB OOO cost is negligible                            | **Wrong at large scale** — 23% penalty emerges from chunk decompression        |
+| InfluxDB memory is ~300–900 MB                                | **Wrong** — peaks at 2.6 GB at large BATCH-LARGE                               |
+| IoTDB memory is a fixed pre-allocation                        | **Overstated** — heap grows to ~15.5 GB at large scale                         |
+| TimescaleDB P99 tail latency grows with data                  | **Confirmed and severe** — 275 ms → 1,672 ms → 4,232 ms across scales          |
++---------------------------------------------------------------+--------------------------------------------------------------------------------+
 
 ---
 
