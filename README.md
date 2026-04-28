@@ -487,7 +487,7 @@ IoTDB's value-filter latency grew only 5.9× for 100× more data. At medium scal
 |-----------|----------------------------------------------------------------------------|
 | CPU       | Intel Core i5-11400F (6 cores / 12 threads, 2.60 GHz base, 4.40 GHz boost) |
 | RAM       | 32 GB                                                                      |
-| Disk      | 500 GB                                                                     |
+| Disk      | 500 GB (SSD NVME)                                                          |
 | OS        | NixOS (Linux 6.12)                                                         |
 
 ### Docker containers
