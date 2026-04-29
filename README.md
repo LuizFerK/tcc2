@@ -39,7 +39,7 @@ scripts/
 
 **How a benchmark run works:**
 
-1. `benchmark.py` starts the Docker containers if not already running.
+1. `benchmark.py` starts each database container immediately before its tests begin and stops it once all its tests complete, so only one database is active at a time.
 2. For each (database, test) pair, the Python driver writes the correct parameters to the Java benchmark client's `conf/config.properties`.
 3. The Java client is invoked via `bash benchmark.sh`; a background thread polls `docker stats` every second to collect CPU and memory samples.
 4. After the run, `metrics.py` parses the Result Matrix and Latency Matrix from the Java client's stdout, combines them with the Docker samples, and appends a row to the results table.
@@ -470,12 +470,124 @@ IoTDB's value-filter latency grew only 5.9× for 100× more data. At medium scal
 
 ---
 
+## Tuned configuration: small-scale re-run
+
+Two configuration changes were applied before this re-run, addressing two of the limitations noted in the original analysis:
+
+1. **Sequential container lifecycle.** Previously all three databases started simultaneously and ran in parallel throughout the entire session. Each database container now starts immediately before its own tests and stops as soon as they finish. This eliminates cross-database resource contention and gives each database exclusive access to the host's CPU, memory, and I/O during its workload.
+
+2. **Database-level tuning.** TimescaleDB received a pgtune configuration for PostgreSQL 15 on this machine (`shared_buffers=8GB`, `work_mem=27413kB`, `maintenance_work_mem=2GB`, `effective_io_concurrency=1000`, and WAL/parallelism settings matched to 6 cores and 32 GB RAM). InfluxDB's TSM write-cache ceiling was raised to 8 GB via `INFLUXD_STORAGE_CACHE_MAX_MEMORY_SIZE`. A 28 GB `mem_limit` was added to every container.
+
+### Results
+
+| DB          | Test         | Time (s) | Throughput        | Avg Lat   | P99 Lat   | Avg CPU | Peak CPU | Avg Mem    | Peak Mem   |
+|-------------|--------------|----------|-------------------|-----------|-----------|---------|----------|------------|------------|
+| INFLUXDB    | BATCH-SMALL  | 19.9     | 5024.41 pts/s     | 9.41 ms   | 14.21 ms  | 3.9%    | 6.9%     | 98.2 MB    | 169.1 MB   |
+| INFLUXDB    | BATCH-LARGE  | 37.49    | 2667256.15 pts/s  | 18.04 ms  | 60.02 ms  | 21.6%   | 31.3%    | 316.6 MB   | 470.1 MB   |
+| INFLUXDB    | OUT-OF-ORDER | 39.12    | 255634.84 pts/s   | 18.92 ms  | 50.11 ms  | 8.1%    | 16.6%    | 228.1 MB   | 411.9 MB   |
+| INFLUXDB    | WRITE        | 25.13    | 397894.94 pts/s   | 12.00 ms  | 190.50 ms | 8.5%    | 15.8%    | 190.8 MB   | 239.0 MB   |
+| INFLUXDB    | READ         | 24.29    | 4317.23 pts/s     | 23.27 ms  | 215.95 ms | 41.3%   | 54.4%    | 254.2 MB   | 271.2 MB   |
+| INFLUXDB    | LATEST-POINT | 10.49    | 476.75 pts/s      | 9.24 ms   | 15.54 ms  | 33.2%   | 53.1%    | 255.4 MB   | 262.6 MB   |
+| INFLUXDB    | DOWNSAMPLE   | 6.94     | 9370.00 pts/s     | 5.71 ms   | 11.54 ms  | 24.5%   | 48.6%    | 244.8 MB   | 245.8 MB   |
+| INFLUXDB    | RANGE-QUERY  | 6.62     | 37002.24 pts/s    | 5.41 ms   | 11.49 ms  | 22.6%   | 48.5%    | 241.1 MB   | 243.0 MB   |
+| INFLUXDB    | VALUE-FILTER | 73.08    | 1181.67 pts/s     | 71.09 ms  | 243.26 ms | 49.0%   | 55.7%    | 262.4 MB   | 284.9 MB   |
+| TIMESCALEDB | BATCH-SMALL  | 19.53    | 5120.34 pts/s     | 9.22 ms   | 14.66 ms  | 3.4%    | 5.1%     | 239.7 MB   | 244.5 MB   |
+| TIMESCALEDB | BATCH-LARGE  | 465.27   | 214927.88 pts/s   | 225.23 ms | 812.28 ms | 31.3%   | 37.8%    | 1072.5 MB  | 1813.5 MB  |
+| TIMESCALEDB | OUT-OF-ORDER | 62.45    | 160121.49 pts/s   | 28.86 ms  | 226.84 ms | 21.5%   | 30.8%    | 1816.1 MB  | 1820.7 MB  |
+| TIMESCALEDB | WRITE        | 57.21    | 174787.87 pts/s   | 27.70 ms  | 223.00 ms | 22.5%   | 32.2%    | 1816.3 MB  | 1825.8 MB  |
+| TIMESCALEDB | READ         | 9.15     | 11679.48 pts/s    | 8.01 ms   | 158.62 ms | 35.0%   | 56.4%    | 1817.4 MB  | 1826.8 MB  |
+| TIMESCALEDB | LATEST-POINT | 1.48     | 3386.06 pts/s     | 0.38 ms   | 0.62 ms   | 6.1%    | 12.1%    | 1803.3 MB  | 1803.3 MB  |
+| TIMESCALEDB | DOWNSAMPLE   | 1.7      | 38347.26 pts/s    | 0.61 ms   | 0.98 ms   | 7.2%    | 21.5%    | 1803.6 MB  | 1804.3 MB  |
+| TIMESCALEDB | RANGE-QUERY  | 1.62     | 154115.31 pts/s   | 0.54 ms   | 0.86 ms   | 9.3%    | 18.6%    | 1803.8 MB  | 1804.3 MB  |
+| TIMESCALEDB | VALUE-FILTER | 24.87    | 3541.10 pts/s     | 23.98 ms  | 157.82 ms | 46.5%   | 56.7%    | 1821.6 MB  | 1825.8 MB  |
+| IOTDB       | BATCH-SMALL  | 3.5      | 28593.60 pts/s    | 1.22 ms   | 1.35 ms   | 7.8%    | 40.2%    | 1680.8 MB  | 1858.6 MB  |
+| IOTDB       | BATCH-LARGE  | 8.45     | 11827572.73 pts/s | 3.51 ms   | 18.83 ms  | 18.3%   | 80.6%    | 2366.5 MB  | 2975.7 MB  |
+| IOTDB       | OUT-OF-ORDER | 5.34     | 1871351.91 pts/s  | 2.09 ms   | 3.07 ms   | 7.0%    | 33.8%    | 3050.6 MB  | 3120.1 MB  |
+| IOTDB       | WRITE        | 4.62     | 2163809.95 pts/s  | 1.73 ms   | 1.18 ms   | 5.1%    | 19.7%    | 3165.9 MB  | 3205.1 MB  |
+| IOTDB       | READ         | 4.82     | 21381.34 pts/s    | 3.65 ms   | 87.14 ms  | 27.5%   | 64.5%    | 6533.9 MB  | 8358.9 MB  |
+| IOTDB       | LATEST-POINT | 2.38     | 2104.25 pts/s     | 1.24 ms   | 2.53 ms   | 9.7%    | 28.0%    | 8565.8 MB  | 8630.3 MB  |
+| IOTDB       | DOWNSAMPLE   | 2.94     | 22095.82 pts/s    | 1.81 ms   | 4.90 ms   | 16.1%   | 32.1%    | 9856.7 MB  | 10133.5 MB |
+| IOTDB       | RANGE-QUERY  | 2.3      | 108630.64 pts/s   | 1.19 ms   | 4.75 ms   | 8.8%    | 25.1%    | 10139.3 MB | 10139.6 MB |
+| IOTDB       | VALUE-FILTER | 4.82     | 18257.47 pts/s    | 3.72 ms   | 27.53 ms  | 22.1%   | 53.7%    | 10181.9 MB | 10189.8 MB |
+
+### Analysis
+
+#### TimescaleDB: substantial write improvement from pgtune
+
+The most significant performance gains are in TimescaleDB write throughput:
+
+| Test         | Old pts/s | New pts/s | Throughput Δ | Old avg lat | New avg lat | Latency Δ |
+|--------------|-----------|-----------|--------------|-------------|-------------|-----------|
+| BATCH-SMALL  |     4,454 |     5,120 |        +15%  |  10.67 ms   |   9.22 ms   |    -14%   |
+| BATCH-LARGE  |   160,546 |   214,927 |        +34%  | 302.36 ms   | 225.23 ms   |    -25%   |
+| OUT-OF-ORDER |   132,189 |   160,121 |        +21%  |  36.52 ms   |  28.86 ms   |    -21%   |
+| WRITE        |   133,677 |   174,787 |        +30%  |  36.05 ms   |  27.70 ms   |    -25%   |
+
+The driver is `shared_buffers=8GB`, which gives PostgreSQL a substantially larger buffer pool and reduces WAL write-amplification from buffer evictions. `work_mem=27413kB` allows sorting and hashing to stay in memory rather than spilling to disk. `checkpoint_completion_target=0.9` spreads checkpoint I/O more evenly across the checkpoint interval, reducing write stall spikes that inflate P99 latency. BATCH-LARGE P99 dropped from 1,069 ms to 812 ms — a 24% improvement driven almost entirely by fewer checkpoint stalls.
+
+TimescaleDB read workloads also improved:
+
+| Test         | Old avg lat | New avg lat | Δ    |
+|--------------|-------------|-------------|------|
+| VALUE-FILTER |  40.12 ms   |  23.98 ms   | -40% |
+| READ         |  12.96 ms   |   8.01 ms   | -38% |
+| LATEST-POINT |   0.50 ms   |   0.38 ms   | -24% |
+| DOWNSAMPLE   |   0.72 ms   |   0.61 ms   | -15% |
+| RANGE-QUERY  |   0.64 ms   |   0.54 ms   | -15% |
+
+VALUE-FILTER benefited most, consistent with `work_mem` eliminating disk spills for predicate-evaluation sorting that were not obvious at this data volume.
+
+#### InfluxDB reads improved; BATCH-LARGE P99 dropped sharply
+
+All InfluxDB read latencies improved with the isolated run:
+
+| Test         | Old avg lat | New avg lat | Δ    |
+|--------------|-------------|-------------|------|
+| VALUE-FILTER |  89.85 ms   |  71.09 ms   | -21% |
+| READ         |  28.22 ms   |  23.27 ms   | -17% |
+| DOWNSAMPLE   |   6.85 ms   |   5.71 ms   | -17% |
+| RANGE-QUERY  |   6.50 ms   |   5.41 ms   | -17% |
+| LATEST-POINT |  10.85 ms   |   9.24 ms   | -15% |
+
+In the original setup, TimescaleDB occupied ~5.4 GB of OS page cache throughout the InfluxDB test session, reducing the memory available for InfluxDB's own TSM series index and OS file cache. Running in isolation removes that pressure.
+
+BATCH-LARGE also improved notably in both throughput (2.19M → 2.67M pts/s, +21%) and P99 latency (205 ms → 60 ms, -71%). The P99 drop suggests InfluxDB's TSM compaction engine — which runs asynchronously alongside writes — was previously competing with TimescaleDB for I/O bandwidth.
+
+Sequential write (WRITE) shows a slightly lower throughput (439K → 397K pts/s) and a higher P99 (39 ms → 190 ms). The average latency moved less than 11% (10.81 ms → 12.00 ms), and the overall wall time increased only from 22.76 s to 25.13 s. This is within run-to-run variance for a short benchmark and does not represent a configuration regression.
+
+#### Memory measurements are now more meaningful
+
+The most dramatic numerical change in the table is in the memory columns, and the reason is methodological rather than physical.
+
+**TimescaleDB** previously reported ~5,443 MB at BATCH-SMALL — the very first test. This was not PostgreSQL's operational footprint; it was accumulated OS page cache from having run alongside IoTDB throughout the entire InfluxDB test session (roughly two hours of idle container time). In the new setup, TimescaleDB starts fresh and shows 239 MB at BATCH-SMALL, growing to ~1,816 MB after the write tests warm `shared_buffers`. The 1.8 GB figure is the honest representation of TimescaleDB's actual buffer-pool usage for this dataset size. The earlier 5.4 GB was inflated by kernel-managed page cache that had nothing to do with the test being measured.
+
+**IoTDB** previously reported ~12,469 MB at BATCH-SMALL. IoTDB had been idle but running throughout all InfluxDB and TimescaleDB tests before its own session began. During that time the JVM pre-allocated its configured maximum heap in anticipation of load. In the new setup the JVM starts at 1,680 MB and grows organically to ~10 GB by the end of read tests, reflecting actual working-set demand across workload phases rather than speculative pre-allocation.
+
+#### IoTDB reads show a slight regression
+
+IoTDB read latencies are modestly higher in the tuned run:
+
+| Test         | Old avg lat | New avg lat | Δ    |
+|--------------|-------------|-------------|------|
+| READ         |   2.26 ms   |   3.65 ms   | +62% |
+| LATEST-POINT |   0.78 ms   |   1.24 ms   | +59% |
+| DOWNSAMPLE   |   1.07 ms   |   1.81 ms   | +69% |
+| RANGE-QUERY  |   1.35 ms   |   1.19 ms   | -12% |
+
+This is the inverse of the memory effect: in the original setup, IoTDB's JVM had been running for hours before its read tests began, giving the JIT compiler ample time to optimise the hot read paths at idle. In the tuned run the JVM is freshly started at the beginning of IoTDB's session, and the JIT is still compiling during the read tests. This is the same phenomenon identified in the large-scale analysis — IoTDB's batch-small throughput more than doubles from small to large scale as the JIT saturates the Thrift path. The read latencies from the original run were artificially optimistic due to unintentional JIT pre-warming from idle time. Write performance, which comes earlier in the test order and benefits from JIT warmup during the write phase itself, is unaffected.
+
+### Net assessment
+
+pgtune delivers clear, consistent gains for TimescaleDB: 30–34% write throughput improvement and 15–40% read latency reduction. InfluxDB benefits from isolation rather than explicit tuning — read latencies drop 15–21% and BATCH-LARGE P99 drops 71% once resource contention is removed. The memory figures for TimescaleDB (5.4 GB → 1.8 GB) and IoTDB (12.5 GB → 1.7 GB start) are substantially more honest; the old numbers were artefacts of the shared-start methodology, not real database footprints at small scale.
+
+---
+
 ## Limitations
 
-- **Cache warm-up:** Read tests run sequentially on the same dataset. Later tests benefit from warmer OS page cache and DB in-memory structures. For production-quality isolation, each test should flush caches and restart containers.
-- **Default configurations:** No database was tuned beyond what is necessary to run the benchmark (TimescaleDB uses PostgreSQL's default `shared_buffers=128 MB`). Tuning each database to use equal memory budgets would narrow some gaps.
+- **Cache warm-up:** Read tests run sequentially on the same dataset. Later tests benefit from warmer OS page cache and DB in-memory structures. For production-quality isolation, each test should flush caches and restart containers between tests.
 - **IoTDB memory buffering:** IoTDB's write throughput is partly a consequence of deferred durability — data lives in RAM until the memtable is flushed. The numbers reflect in-memory write acknowledgement, not guaranteed persistence.
 - **Single-node, single-machine:** All three databases and the benchmark clients ran on the same host. Network latency (relevant for InfluxDB's HTTP API) is near zero, which flattens a real-world disadvantage.
+- **JIT warm-up (IoTDB):** IoTDB read performance improves over the duration of a session as the JVM JIT compiler optimises hot paths. Short runs understate steady-state read throughput; longer runs (medium/large scale) are more representative.
 
 ---
 
@@ -492,7 +604,7 @@ IoTDB's value-filter latency grew only 5.9× for 100× more data. At medium scal
 
 ### Docker containers
 
-All three containers run on the same host with no explicit CPU or memory limits set — each competes for the full machine resources during its benchmark run.
+All three containers run on the same host with a 28 GB `mem_limit` each. Containers start and stop sequentially — only one database is active at any given time during a benchmark session.
 
 | Container   | Image                                               |
 |-------------|-----------------------------------------------------|

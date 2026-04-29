@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 import sys
 import os
+import time
 import argparse
 import subprocess
+import urllib.request
+import urllib.error
 
 import benchrunner.config as cfg
 from benchrunner import influxdb, timescaledb, iotdb, metrics
@@ -13,17 +16,45 @@ ALL_TESTS = [
 ]
 
 
-def ensure_docker_running():
-    running = subprocess.run(
-        ['docker', 'compose', 'ps', '--services', '--filter', 'status=running'],
-        capture_output=True, text=True,
-    ).stdout.strip().splitlines()
-    needed = {'iotdb', 'influxdb', 'timescaledb'}
-    if not needed.issubset(set(running)):
-        print('[+] Starting databases via docker compose...')
-        subprocess.run(['docker', 'compose', 'up', '-d'], check=True)
-    else:
-        print('[+] All database containers already running.')
+def _wait_ready(service: str, timeout: int = 90):
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            if service == 'influxdb':
+                urllib.request.urlopen('http://localhost:8086/health', timeout=2)
+                return
+            elif service == 'timescaledb':
+                r = subprocess.run(
+                    ['docker', 'exec', 'timescaledb', 'pg_isready', '-U', 'postgres'],
+                    capture_output=True,
+                )
+                if r.returncode == 0:
+                    return
+            elif service == 'iotdb':
+                r = subprocess.run(
+                    ['docker', 'exec', 'iotdb',
+                     '/iotdb/sbin/start-cli.sh', '-h', '127.0.0.1', '-p', '6667',
+                     '-u', 'root', '-pw', 'root', '-e', 'show version'],
+                    capture_output=True, timeout=10,
+                )
+                if r.returncode == 0:
+                    return
+        except Exception:
+            pass
+        time.sleep(2)
+    raise TimeoutError(f'{service} did not become ready within {timeout}s')
+
+
+def start_db(service: str):
+    print(f'[+] Starting {service}...')
+    subprocess.run(['docker', 'compose', 'up', '-d', service], check=True)
+    _wait_ready(service)
+    print(f'[+] {service} is ready.')
+
+
+def stop_db(service: str):
+    print(f'[+] Stopping {service}...')
+    subprocess.run(['docker', 'compose', 'stop', service], check=True)
 
 
 def main():
@@ -49,8 +80,6 @@ def main():
     dbs   = list(db_funcs.keys()) if args.db == 'all' else [args.db]
     tests = ALL_TESTS if args.test == 'all' else [args.test]
 
-    ensure_docker_running()
-
     print('\n==================================================')
     print(f' Scale:     {cfg.current_scale.upper()}')
     print(f' Databases: {", ".join(dbs)}')
@@ -58,13 +87,17 @@ def main():
     print('==================================================')
 
     for db in dbs:
-        for t in tests:
-            print(f'\n--- {db.upper()} → {t.upper()} ---')
-            try:
-                db_funcs[db](t)
-            except Exception as e:
-                print(f'[!] Benchmark failed for {db} ({t}): {e}')
-                sys.exit(1)
+        start_db(db)
+        try:
+            for t in tests:
+                print(f'\n--- {db.upper()} → {t.upper()} ---')
+                try:
+                    db_funcs[db](t)
+                except Exception as e:
+                    print(f'[!] Benchmark failed for {db} ({t}): {e}')
+                    sys.exit(1)
+        finally:
+            stop_db(db)
 
     metrics.print_summary()
 

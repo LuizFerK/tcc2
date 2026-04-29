@@ -216,15 +216,14 @@ def print_summary():
     rows = [_format_result(r) for r in RESULTS]
     widths = {c: max(len(c), max((len(str(row[c])) for row in rows), default=0)) for c in cols}
 
-    sep = '+' + '+'.join('-' * (widths[c] + 2) for c in cols) + '+'
-    header = '|' + '|'.join(f' {c:<{widths[c]}} ' for c in cols) + '|'
+    header = '| ' + ' | '.join(f'{c:<{widths[c]}}' for c in cols) + ' |'
+    sep    = '|' + '|'.join('-' * (widths[c] + 2) for c in cols) + '|'
 
-    print('\n' + sep)
-    print(header)
+    print('\n' + header)
     print(sep)
     for row in rows:
-        print('|' + '|'.join(f' {str(row[c]):<{widths[c]}} ' for c in cols) + '|')
-    print(sep + '\n')
+        print('| ' + ' | '.join(f'{str(row[c]):<{widths[c]}}' for c in cols) + ' |')
+    print()
 
 
 def write_csv(path):

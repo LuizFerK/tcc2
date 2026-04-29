@@ -11,6 +11,7 @@ services:
     volumes:
       - iotdb_data:/iotdb/data
       - iotdb_logs:/iotdb/logs
+    mem_limit: 28g
     restart: unless-stopped
 
   # -------------------------------------------------------------------
@@ -28,9 +29,11 @@ services:
       - DOCKER_INFLUXDB_INIT_ORG=my-org
       - DOCKER_INFLUXDB_INIT_BUCKET=my-bucket
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=my-super-secret-auth-token
+      - INFLUXD_STORAGE_CACHE_MAX_MEMORY_SIZE=8589934592  # 8 GB TSM write cache
     volumes:
       - influxdb_data:/var/lib/influxdb2
       - influxdb_config:/etc/influxdb2
+    mem_limit: 28g
     restart: unless-stopped
 
   # -------------------------------------------------------------------
@@ -46,10 +49,34 @@ services:
       - POSTGRES_PASSWORD=postgrespassword123
       - POSTGRES_DB=timescaledb
       - POSTGRES_HOST_AUTH_METHOD=md5
-    command: ["postgres", "-c", "password_encryption=md5"]
+    command: [
+      "postgres",
+      "-c", "password_encryption=md5",
+      "-c", "max_connections=300",
+      "-c", "shared_buffers=8GB",
+      "-c", "effective_cache_size=24GB",
+      "-c", "maintenance_work_mem=2GB",
+      "-c", "checkpoint_completion_target=0.9",
+      "-c", "wal_buffers=16MB",
+      "-c", "default_statistics_target=100",
+      "-c", "random_page_cost=1.1",
+      "-c", "effective_io_concurrency=1000",
+      "-c", "work_mem=27413kB",
+      "-c", "huge_pages=try",
+      "-c", "jit=off",
+      "-c", "wal_compression=lz4",
+      "-c", "autovacuum_work_mem=2GB",
+      "-c", "min_wal_size=2GB",
+      "-c", "max_wal_size=8GB",
+      "-c", "max_worker_processes=6",
+      "-c", "max_parallel_workers_per_gather=3",
+      "-c", "max_parallel_workers=6",
+      "-c", "max_parallel_maintenance_workers=3"
+    ]
     volumes:
       - timescaledb_data:/var/lib/postgresql/data
       - ./scripts/init-timescaledb.sql:/docker-entrypoint-initdb.d/01-md5-auth.sql
+    mem_limit: 28g
     restart: unless-stopped
 
 # -------------------------------------------------------------------
