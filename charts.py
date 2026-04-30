@@ -3,7 +3,7 @@
 Benchmark visualization for IoT time-series DB comparison (InfluxDB, TimescaleDB, IoTDB).
 
 Usage:
-  python3 charts.py [--source small|medium|large|mixed|all] [--language en-us|pt-br]
+  python3 charts.py [--source small|medium|large|mixed|all|rerun|rerun-small|rerun-medium|rerun-large|rerun-mixed|comparison] [--language en-us|pt-br]
 
 Dependencies: matplotlib numpy pandas
 On NixOS/nix develop: matplotlib, numpy, pandas are included in the dev shell.
@@ -18,6 +18,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 from matplotlib.patches import Patch
+from matplotlib.lines import Line2D
 
 RESULTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'results')
 
@@ -112,6 +113,25 @@ STRINGS = {
         # chart 15 — mixed
         'c15_title':  'Chart 15 — Out-of-Order Write Degradation vs Sequential',
         'c15_ylabel': 'Throughput Degradation (%)\n(OOO vs sequential WRITE)',
+        # comparison shared
+        'original_label': 'Original',
+        'tuned_label':    'Tuned',
+        # chart 16 — comparison
+        'c16_title':  'Chart 16 — WRITE Throughput: Original vs Tuned',
+        'c16_ylabel': 'WRITE Throughput (pts/s) — log scale',
+        # chart 17 — comparison
+        'c17_title':  'Chart 17 — Write P99 Latency: Original vs Tuned',
+        'c17_ylabel': 'P99 Latency (ms) — log scale',
+        # chart 18 — comparison
+        'c18_title':  'Chart 18 — Out-of-Order Penalty: Original vs Tuned',
+        'c18_ylabel': 'Throughput Degradation (%) OOO vs WRITE',
+        # chart 19 — comparison
+        'c19_title':   'Chart 19 — READ Workload: CPU and P99 Before vs After',
+        'c19_sub_cpu': 'Avg CPU (%)',
+        'c19_sub_p99': 'P99 Latency (ms) — log scale',
+        # chart 20 — comparison
+        'c20_title':  'Chart 20 — Memory Baseline: Original vs Tuned (BATCH-SMALL start)',
+        'c20_ylabel': 'Avg Memory at BATCH-SMALL (MB) — log scale',
     },
     'pt-br': {
         # shared
@@ -196,6 +216,25 @@ STRINGS = {
         # chart 15 — mixed
         'c15_title':  'Gráfico 15 — Degradação de Escrita Fora de Ordem vs Sequencial',
         'c15_ylabel': 'Degradação da Taxa de Transferência (%)\n(OOO vs WRITE sequencial)',
+        # comparison shared
+        'original_label': 'Original',
+        'tuned_label':    'Ajustado',
+        # chart 16 — comparison
+        'c16_title':  'Gráfico 16 — Taxa de Transferência WRITE: Original vs Ajustado',
+        'c16_ylabel': 'Taxa de Transf. WRITE (pts/s) — escala logarítmica',
+        # chart 17 — comparison
+        'c17_title':  'Gráfico 17 — Latência P99 de Escrita: Original vs Ajustado',
+        'c17_ylabel': 'Latência P99 (ms) — escala logarítmica',
+        # chart 18 — comparison
+        'c18_title':  'Gráfico 18 — Penalidade Fora de Ordem: Original vs Ajustado',
+        'c18_ylabel': 'Degradação da Taxa de Transferência (%) OOO vs WRITE',
+        # chart 19 — comparison
+        'c19_title':   'Gráfico 19 — Carga de Leitura: CPU e P99 Antes vs Depois',
+        'c19_sub_cpu': 'CPU Média (%)',
+        'c19_sub_p99': 'Latência P99 (ms) — escala log',
+        # chart 20 — comparison
+        'c20_title':  'Gráfico 20 — Baseline de Memória: Original vs Ajustado (início BATCH-SMALL)',
+        'c20_ylabel': 'Memória Média no BATCH-SMALL (MB) — escala logarítmica',
     },
 }
 
@@ -215,8 +254,11 @@ def test_label(strings, test):
     return strings['test_labels'].get(test, test)
 
 
-def load_csv(scale):
-    path = os.path.join(RESULTS_DIR, f'{scale}.csv')
+def load_csv(scale, subdir=None):
+    if subdir:
+        path = os.path.join(RESULTS_DIR, subdir, f'{scale}.csv')
+    else:
+        path = os.path.join(RESULTS_DIR, f'{scale}.csv')
     if not os.path.exists(path):
         return None
     return pd.read_csv(path)
@@ -803,13 +845,18 @@ def chart15_ooo_degradation(df_s, df_m, df_l, output_dir, strings):
 # Runners
 # ===========================================================================
 
-def _run_scale(scale, lang_folder, strings):
-    df = load_csv(scale)
+def _run_scale(scale, lang_folder, strings, results_subdir=None):
+    df = load_csv(scale, subdir=results_subdir)
     if df is None:
-        print(f'Skipping {scale}: results/{scale}.csv not found.')
+        src = f'results/{results_subdir}/{scale}.csv' if results_subdir else f'results/{scale}.csv'
+        print(f'Skipping {scale}: {src} not found.')
         return
 
-    output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'charts', scale, lang_folder)
+    base = os.path.dirname(os.path.abspath(__file__))
+    if results_subdir:
+        output_dir = os.path.join(base, 'charts', results_subdir, scale, lang_folder)
+    else:
+        output_dir = os.path.join(base, 'charts', scale, lang_folder)
     os.makedirs(output_dir, exist_ok=True)
 
     print(t(strings, 'generating').strip() + f' [{scale}]\n')
@@ -824,17 +871,22 @@ def _run_scale(scale, lang_folder, strings):
     print(f'\n{t(strings, "done")}: {os.path.abspath(output_dir)}/\n')
 
 
-def _run_mixed(lang_folder, strings):
-    df_s = load_csv('small')
-    df_m = load_csv('medium')
-    df_l = load_csv('large')
+def _run_mixed(lang_folder, strings, results_subdir=None):
+    df_s = load_csv('small', subdir=results_subdir)
+    df_m = load_csv('medium', subdir=results_subdir)
+    df_l = load_csv('large', subdir=results_subdir)
 
     missing = [s for s, d in [('small', df_s), ('medium', df_m), ('large', df_l)] if d is None]
     if missing:
-        print(f'Skipping mixed charts: results/{missing[0]}.csv not found.')
+        src = f'results/{results_subdir}/' if results_subdir else 'results/'
+        print(f'Skipping mixed charts: {src}{missing[0]}.csv not found.')
         return
 
-    output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'charts', 'mixed', lang_folder)
+    base = os.path.dirname(os.path.abspath(__file__))
+    if results_subdir:
+        output_dir = os.path.join(base, 'charts', results_subdir, 'mixed', lang_folder)
+    else:
+        output_dir = os.path.join(base, 'charts', 'mixed', lang_folder)
     os.makedirs(output_dir, exist_ok=True)
 
     print(t(strings, 'generating').strip() + ' [mixed]\n')
@@ -854,6 +906,289 @@ def _run_mixed(lang_folder, strings):
 
 
 # ===========================================================================
+# Comparison charts (16–20)
+# ===========================================================================
+
+def chart16_write_throughput_comparison(dfs_orig, dfs_rerun, output_dir, strings):
+    labels = _scale_labels(strings)
+    orig_label = t(strings, 'original_label')
+    tuned_label = t(strings, 'tuned_label')
+
+    fig, ax = plt.subplots(figsize=(11, 6))
+
+    for db in DBS:
+        orig_vals = [get_val(df, db, 'WRITE', 'throughput_pts_s') for df in dfs_orig]
+        tuned_vals = [get_val(df, db, 'WRITE', 'throughput_pts_s') for df in dfs_rerun]
+        color = DB_COLORS[db]
+        ax.plot(labels, orig_vals, 'o--', color=color, alpha=0.55, linewidth=2.0,
+                markersize=8, label=f'{DB_LABELS[db]} ({orig_label})')
+        ax.plot(labels, tuned_vals, 'o-', color=color, alpha=0.95, linewidth=2.5,
+                markersize=10, label=f'{DB_LABELS[db]} ({tuned_label})')
+        for lbl, v in zip(labels, orig_vals):
+            ax.annotate(f'{v:,.0f}', (lbl, v), textcoords='offset points',
+                        xytext=(0, -14), ha='center', fontsize=7, color=color, alpha=0.65)
+        for lbl, v in zip(labels, tuned_vals):
+            ax.annotate(f'{v:,.0f}', (lbl, v), textcoords='offset points',
+                        xytext=(0, 8), ha='center', fontsize=7, color=color)
+
+    ax.set_yscale('log')
+    ax.set_ylabel(t(strings, 'c16_ylabel'), fontsize=12)
+    ax.set_title(t(strings, 'c16_title'), fontsize=13, fontweight='bold')
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f'{v:,.0f}'))
+    ax.grid(axis='y', alpha=0.3, which='both')
+    legend_elements = []
+    for db in DBS:
+        legend_elements.append(Line2D([0], [0], color=DB_COLORS[db], linewidth=2, alpha=0.55,
+                                      linestyle='--', label=f'{DB_LABELS[db]} ({orig_label})'))
+        legend_elements.append(Line2D([0], [0], color=DB_COLORS[db], linewidth=2.5, alpha=0.95,
+                                      linestyle='-', label=f'{DB_LABELS[db]} ({tuned_label})'))
+    ax.legend(handles=legend_elements, fontsize=9, loc='upper left')
+    fig.tight_layout()
+    save_fig(fig, output_dir, '16_write_throughput_comparison.png', strings)
+
+
+def chart17_p99_write_comparison(dfs_orig, dfs_rerun, output_dir, strings):
+    scale_labels = _scale_labels(strings)
+    orig_label = t(strings, 'original_label')
+    tuned_label = t(strings, 'tuned_label')
+    tests = ['WRITE', 'OUT-OF-ORDER']
+    bar_w, gap = 0.35, 0.06
+    n_dbs = len(DBS)
+    group_w = n_dbs * (2 * bar_w + gap) + 0.3
+    x = np.arange(n_dbs) * group_w
+
+    fig, axes = plt.subplots(2, 3, figsize=(18, 10))
+
+    for row, test in enumerate(tests):
+        for col, (scale_lbl, df_o, df_r) in enumerate(zip(scale_labels, dfs_orig, dfs_rerun)):
+            ax = axes[row][col]
+            for i, db in enumerate(DBS):
+                orig_p99 = get_val(df_o, db, test, 'p99_lat_ms')
+                tuned_p99 = get_val(df_r, db, test, 'p99_lat_ms')
+                color = DB_COLORS[db]
+                x_left = x[i] - bar_w - gap / 2
+                x_right = x[i] + gap / 2
+                ax.bar(x_left, orig_p99, bar_w, color=color, alpha=0.40,
+                       hatch='//', edgecolor='white', linewidth=0.5)
+                ax.bar(x_right, tuned_p99, bar_w, color=color, alpha=0.88,
+                       edgecolor='white', linewidth=0.5)
+                if orig_p99 > 0:
+                    ax.text(x_left + bar_w / 2, orig_p99 * 1.15, f'{orig_p99:,.0f}',
+                            ha='center', va='bottom', fontsize=6.5, color=color, alpha=0.7)
+                if tuned_p99 > 0:
+                    ax.text(x_right + bar_w / 2, tuned_p99 * 1.15, f'{tuned_p99:,.0f}',
+                            ha='center', va='bottom', fontsize=6.5, color=color)
+
+            ax.set_yscale('log')
+            ax.set_xticks(x)
+            ax.set_xticklabels([DB_LABELS[db] for db in DBS], fontsize=9)
+            ax.set_ylabel(t(strings, 'c17_ylabel') if col == 0 else '')
+            title = f'{test_label(strings, test)} — {scale_lbl}'
+            ax.set_title(title, fontsize=10, fontweight='bold')
+            ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f'{v:,.0f}'))
+            ax.grid(axis='y', alpha=0.3, which='both')
+
+    legend_elements = [
+        Patch(facecolor='gray', alpha=0.40, hatch='//', label=orig_label),
+        Patch(facecolor='gray', alpha=0.88, label=tuned_label),
+    ]
+    fig.legend(handles=legend_elements, loc='upper right', fontsize=10,
+               bbox_to_anchor=(1.0, 1.0))
+    fig.suptitle(t(strings, 'c17_title'), fontsize=13, fontweight='bold')
+    fig.tight_layout()
+    save_fig(fig, output_dir, '17_p99_write_comparison.png', strings)
+
+
+def chart18_ooo_penalty_comparison(dfs_orig, dfs_rerun, output_dir, strings):
+    scale_labels = _scale_labels(strings)
+    orig_label = t(strings, 'original_label')
+    tuned_label = t(strings, 'tuned_label')
+    bar_w = 0.30
+    pair_gap = 0.05   # gap between orig/tuned within a DB pair
+    db_step = 2 * bar_w + pair_gap + 0.15   # spacing between DB pair centers within a scale
+    scale_step = len(DBS) * db_step + 0.55  # large inter-scale gap
+
+    fig, ax = plt.subplots(figsize=(14, 6))
+
+    scale_tick_x = []
+    for s_idx, (scale_lbl, df_o, df_r) in enumerate(zip(scale_labels, dfs_orig, dfs_rerun)):
+        db_positions = []
+        for i, db in enumerate(DBS):
+            center = s_idx * scale_step + i * db_step
+            db_positions.append(center)
+            w_o = get_val(df_o, db, 'WRITE', 'throughput_pts_s')
+            ooo_o = get_val(df_o, db, 'OUT-OF-ORDER', 'throughput_pts_s')
+            w_r = get_val(df_r, db, 'WRITE', 'throughput_pts_s')
+            ooo_r = get_val(df_r, db, 'OUT-OF-ORDER', 'throughput_pts_s')
+            deg_orig = max((w_o - ooo_o) / w_o * 100, 0) if w_o > 0 else 0
+            deg_tuned = max((w_r - ooo_r) / w_r * 100, 0) if w_r > 0 else 0
+            color = DB_COLORS[db]
+            ax.bar(center - bar_w - pair_gap / 2, deg_orig, bar_w, color=color, alpha=0.40,
+                   hatch='//', edgecolor='white', linewidth=0.5)
+            ax.bar(center + pair_gap / 2, deg_tuned, bar_w, color=color, alpha=0.88,
+                   edgecolor='white', linewidth=0.5)
+            if deg_orig >= 0.5:
+                ax.text(center - bar_w / 2 - pair_gap / 2, deg_orig + 0.3, f'{deg_orig:.1f}%',
+                        ha='center', va='bottom', fontsize=7, color=color, alpha=0.7)
+            if deg_tuned >= 0.5:
+                ax.text(center + bar_w / 2 + pair_gap / 2, deg_tuned + 0.3, f'{deg_tuned:.1f}%',
+                        ha='center', va='bottom', fontsize=7, color=color)
+        scale_tick_x.append(np.mean(db_positions))
+
+    ax.set_xticks(scale_tick_x)
+    ax.set_xticklabels(scale_labels, fontsize=12)
+    ax.set_ylabel(t(strings, 'c18_ylabel'), fontsize=12)
+    ax.set_title(t(strings, 'c18_title'), fontsize=13, fontweight='bold')
+    legend_elements = [
+        *[Patch(facecolor=DB_COLORS[db], alpha=0.88, label=DB_LABELS[db]) for db in DBS],
+        Patch(facecolor='gray', alpha=0.40, hatch='//', label=orig_label),
+        Patch(facecolor='gray', alpha=0.88, label=tuned_label),
+    ]
+    ax.legend(handles=legend_elements, fontsize=9)
+    ax.grid(axis='y', alpha=0.3)
+    fig.tight_layout()
+    save_fig(fig, output_dir, '18_ooo_penalty_comparison.png', strings)
+
+
+def chart19_read_saturation_comparison(dfs_orig, dfs_rerun, output_dir, strings):
+    scale_labels = _scale_labels(strings)
+    orig_label = t(strings, 'original_label')
+    tuned_label = t(strings, 'tuned_label')
+    bar_w, gap = 0.35, 0.06
+    n_scales = len(scale_labels)
+
+    fig, (ax_cpu, ax_p99) = plt.subplots(2, 1, figsize=(13, 10))
+
+    scale_tick_x = []
+    for s_idx, (scale_lbl, df_o, df_r) in enumerate(zip(scale_labels, dfs_orig, dfs_rerun)):
+        db_positions = []
+        for i, db in enumerate(DBS):
+            center = s_idx * (len(DBS) * (2 * bar_w + gap) + 0.3) + i * (2 * bar_w + gap + 0.05)
+            db_positions.append(center)
+            color = DB_COLORS[db]
+            cpu_o = get_val(df_o, db, 'READ', 'avg_cpu_pct')
+            cpu_r = get_val(df_r, db, 'READ', 'avg_cpu_pct')
+            p99_o = get_val(df_o, db, 'READ', 'p99_lat_ms')
+            p99_r = get_val(df_r, db, 'READ', 'p99_lat_ms')
+            for ax, vo, vr in [(ax_cpu, cpu_o, cpu_r), (ax_p99, p99_o, p99_r)]:
+                ax.bar(center - bar_w - gap / 2, vo, bar_w, color=color, alpha=0.40,
+                       hatch='//', edgecolor='white', linewidth=0.5)
+                ax.bar(center + gap / 2, vr, bar_w, color=color, alpha=0.88,
+                       edgecolor='white', linewidth=0.5)
+            ax_cpu.text(center - bar_w / 2 - gap / 2, cpu_o + 0.5, f'{cpu_o:.0f}%',
+                        ha='center', va='bottom', fontsize=6.5, color=color, alpha=0.7)
+            ax_cpu.text(center + bar_w / 2 + gap / 2, cpu_r + 0.5, f'{cpu_r:.0f}%',
+                        ha='center', va='bottom', fontsize=6.5, color=color)
+            if p99_o > 0:
+                ax_p99.text(center - bar_w / 2 - gap / 2, p99_o * 1.15, f'{p99_o:,.0f}',
+                            ha='center', va='bottom', fontsize=6.5, color=color, alpha=0.7)
+            if p99_r > 0:
+                ax_p99.text(center + bar_w / 2 + gap / 2, p99_r * 1.15, f'{p99_r:,.0f}',
+                            ha='center', va='bottom', fontsize=6.5, color=color)
+        scale_tick_x.append(np.mean(db_positions))
+
+    ax_cpu.axhline(100, color='red', linestyle='--', linewidth=1.2, alpha=0.6)
+    ax_cpu.set_xticks(scale_tick_x)
+    ax_cpu.set_xticklabels(scale_labels, fontsize=11)
+    ax_cpu.set_ylabel(t(strings, 'c19_sub_cpu'), fontsize=11)
+    ax_cpu.set_ylim(0, 115)
+    ax_cpu.grid(axis='y', alpha=0.3)
+
+    ax_p99.set_yscale('log')
+    ax_p99.set_xticks(scale_tick_x)
+    ax_p99.set_xticklabels(scale_labels, fontsize=11)
+    ax_p99.set_ylabel(t(strings, 'c19_sub_p99'), fontsize=11)
+    ax_p99.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f'{v:,.0f}'))
+    ax_p99.grid(axis='y', alpha=0.3, which='both')
+
+    legend_elements = [
+        *[Patch(facecolor=DB_COLORS[db], alpha=0.88, label=DB_LABELS[db]) for db in DBS],
+        Patch(facecolor='gray', alpha=0.40, hatch='//', label=orig_label),
+        Patch(facecolor='gray', alpha=0.88, label=tuned_label),
+    ]
+    fig.legend(handles=legend_elements, fontsize=9, loc='upper right',
+               bbox_to_anchor=(1.0, 1.0))
+    fig.suptitle(t(strings, 'c19_title'), fontsize=13, fontweight='bold')
+    fig.tight_layout()
+    save_fig(fig, output_dir, '19_read_saturation_comparison.png', strings)
+
+
+def chart20_memory_baseline_comparison(dfs_orig, dfs_rerun, output_dir, strings):
+    scale_labels = _scale_labels(strings)
+    orig_label = t(strings, 'original_label')
+    tuned_label = t(strings, 'tuned_label')
+    bar_w, gap = 0.35, 0.06
+
+    fig, ax = plt.subplots(figsize=(13, 6))
+
+    scale_tick_x = []
+    for s_idx, (scale_lbl, df_o, df_r) in enumerate(zip(scale_labels, dfs_orig, dfs_rerun)):
+        db_positions = []
+        for i, db in enumerate(DBS):
+            center = s_idx * (len(DBS) * (2 * bar_w + gap) + 0.3) + i * (2 * bar_w + gap + 0.05)
+            db_positions.append(center)
+            color = DB_COLORS[db]
+            mem_o = get_val(df_o, db, 'BATCH-SMALL', 'avg_mem_mb')
+            mem_r = get_val(df_r, db, 'BATCH-SMALL', 'avg_mem_mb')
+            ax.bar(center - bar_w - gap / 2, mem_o, bar_w, color=color, alpha=0.40,
+                   hatch='//', edgecolor='white', linewidth=0.5)
+            ax.bar(center + gap / 2, mem_r, bar_w, color=color, alpha=0.88,
+                   edgecolor='white', linewidth=0.5)
+            if mem_o > 0:
+                ax.text(center - bar_w / 2 - gap / 2, mem_o * 1.15, f'{mem_o:,.0f}',
+                        ha='center', va='bottom', fontsize=6.5, color=color, alpha=0.7)
+            if mem_r > 0:
+                ax.text(center + bar_w / 2 + gap / 2, mem_r * 1.15, f'{mem_r:,.0f}',
+                        ha='center', va='bottom', fontsize=6.5, color=color)
+        scale_tick_x.append(np.mean(db_positions))
+
+    ax.set_yscale('log')
+    ax.set_xticks(scale_tick_x)
+    ax.set_xticklabels(scale_labels, fontsize=12)
+    ax.set_ylabel(t(strings, 'c20_ylabel'), fontsize=12)
+    ax.set_title(t(strings, 'c20_title'), fontsize=13, fontweight='bold')
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f'{v:,.0f}'))
+    ax.grid(axis='y', alpha=0.3, which='both')
+    legend_elements = [
+        *[Patch(facecolor=DB_COLORS[db], alpha=0.88, label=DB_LABELS[db]) for db in DBS],
+        Patch(facecolor='gray', alpha=0.40, hatch='//', label=orig_label),
+        Patch(facecolor='gray', alpha=0.88, label=tuned_label),
+    ]
+    ax.legend(handles=legend_elements, fontsize=9)
+    fig.tight_layout()
+    save_fig(fig, output_dir, '20_memory_baseline_comparison.png', strings)
+
+
+def _run_comparison(lang_folder, strings):
+    scales = ['small', 'medium', 'large']
+    dfs_orig = [load_csv(s) for s in scales]
+    dfs_rerun = [load_csv(s, subdir='rerun') for s in scales]
+
+    missing_orig = [s for s, d in zip(scales, dfs_orig) if d is None]
+    missing_rerun = [s for s, d in zip(scales, dfs_rerun) if d is None]
+    if missing_orig:
+        print(f'Skipping comparison charts: results/{missing_orig[0]}.csv not found.')
+        return
+    if missing_rerun:
+        print(f'Skipping comparison charts: results/rerun/{missing_rerun[0]}.csv not found.')
+        return
+
+    base = os.path.dirname(os.path.abspath(__file__))
+    output_dir = os.path.join(base, 'charts', 'comparison', lang_folder)
+    os.makedirs(output_dir, exist_ok=True)
+
+    print(t(strings, 'generating').strip() + ' [comparison]\n')
+
+    chart16_write_throughput_comparison(dfs_orig, dfs_rerun, output_dir, strings)
+    chart17_p99_write_comparison(dfs_orig, dfs_rerun, output_dir, strings)
+    chart18_ooo_penalty_comparison(dfs_orig, dfs_rerun, output_dir, strings)
+    chart19_read_saturation_comparison(dfs_orig, dfs_rerun, output_dir, strings)
+    chart20_memory_baseline_comparison(dfs_orig, dfs_rerun, output_dir, strings)
+
+    print(f'\n{t(strings, "done")}: {os.path.abspath(output_dir)}/\n')
+
+
+# ===========================================================================
 # Entry point
 # ===========================================================================
 
@@ -862,8 +1197,14 @@ def parse_args():
         description='Generate benchmark charts for IoT time-series DB comparison.'
     )
     parser.add_argument(
-        '--source', choices=['all', 'small', 'medium', 'large', 'mixed'], default='all',
-        help='Data source scale (default: all). Reads from results/{source}.csv.',
+        '--source',
+        choices=[
+            'all', 'small', 'medium', 'large', 'mixed',
+            'rerun', 'rerun-small', 'rerun-medium', 'rerun-large', 'rerun-mixed',
+            'comparison',
+        ],
+        default='all',
+        help='Data source (default: all). rerun* reads from results/rerun/. comparison generates before/after charts.',
     )
     parser.add_argument(
         '--language', choices=['en-us', 'pt-br'], default='en-us',
@@ -883,6 +1224,17 @@ def main():
         _run_mixed(lang_folder, strings)
     elif args.source == 'mixed':
         _run_mixed(lang_folder, strings)
+    elif args.source == 'rerun':
+        for scale in ['small', 'medium', 'large']:
+            _run_scale(scale, lang_folder, strings, results_subdir='rerun')
+        _run_mixed(lang_folder, strings, results_subdir='rerun')
+    elif args.source in ('rerun-small', 'rerun-medium', 'rerun-large'):
+        scale = args.source[len('rerun-'):]
+        _run_scale(scale, lang_folder, strings, results_subdir='rerun')
+    elif args.source == 'rerun-mixed':
+        _run_mixed(lang_folder, strings, results_subdir='rerun')
+    elif args.source == 'comparison':
+        _run_comparison(lang_folder, strings)
     else:
         _run_scale(args.source, lang_folder, strings)
 
