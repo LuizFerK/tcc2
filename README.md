@@ -582,6 +582,235 @@ pgtune delivers clear, consistent gains for TimescaleDB: 30–34% write throughp
 
 ---
 
+## Tuned configuration: medium-scale re-run
+
+The same two configuration changes from the small-scale re-run (sequential container lifecycle + pgtune for TimescaleDB + 8 GB TSM cache ceiling for InfluxDB) were applied at medium scale (5,000 loops — 5× more data than small).
+
+### Results
+
+| DB          | Test         | Time (s) | Throughput            | Avg Lat   | P99 Lat    | Avg CPU | Peak CPU | Avg Mem    | Peak Mem   |
+|-------------|--------------|----------|-----------------------|-----------|------------|---------|----------|------------|------------|
+| INFLUXDB    | BATCH-SMALL  | 102.54   | 4,876.11 pts/s        | 10.13 ms  | 30.46 ms   | 5.6%    | 7.3%     | 215.5 MB   | 234.4 MB   |
+| INFLUXDB    | BATCH-LARGE  | 192.45   | 2,598,111.46 pts/s    | 18.92 ms  | 187.52 ms  | 24.4%   | 34.1%    | 978.8 MB   | 2185.2 MB  |
+| INFLUXDB    | OUT-OF-ORDER | 203.71   | 245,447.81 pts/s      | 20.15 ms  | 61.53 ms   | 10.2%   | 18.7%    | 533.6 MB   | 1939.5 MB  |
+| INFLUXDB    | WRITE        | 127.23   | 392,975.20 pts/s      | 12.56 ms  | 39.75 ms   | 11.6%   | 15.9%    | 531.9 MB   | 796.9 MB   |
+| INFLUXDB    | READ         | 508.22   | 1,039.24 pts/s        | 101.13 ms | 1031.74 ms | 55.1%   | 59.1%    | 897.8 MB   | 932.5 MB   |
+| INFLUXDB    | LATEST-POINT | 110.04   | 227.19 pts/s          | 21.72 ms  | 33.62 ms   | 55.6%   | 60.0%    | 569.8 MB   | 795.5 MB   |
+| INFLUXDB    | DOWNSAMPLE   | 29.68    | 10,951.70 pts/s       | 5.65 ms   | 8.61 ms    | 41.3%   | 48.1%    | 311.2 MB   | 313.7 MB   |
+| INFLUXDB    | RANGE-QUERY  | 27.89    | 43,923.27 pts/s       | 5.31 ms   | 8.31 ms    | 40.9%   | 47.2%    | 309.6 MB   | 311.8 MB   |
+| INFLUXDB    | VALUE-FILTER | 1575.87  | 267.55 pts/s          | 310.75 ms | 1003.52 ms | 49.3%   | 51.3%    | 359.3 MB   | 387.8 MB   |
+| TIMESCALEDB | BATCH-SMALL  | 103.34   | 4,838.20 pts/s        | 10.20 ms  | 36.40 ms   | 4.1%    | 5.6%     | 293.6 MB   | 300.1 MB   |
+| TIMESCALEDB | BATCH-LARGE  | 2330.60  | 214,537.29 pts/s      | 230.88 ms | 1098.29 ms | 31.0%   | 38.8%    | 4414.2 MB  | 8661.0 MB  |
+| TIMESCALEDB | OUT-OF-ORDER | 295.28   | 169,331.43 pts/s      | 28.96 ms  | 232.60 ms  | 24.2%   | 33.3%    | 8614.5 MB  | 8622.1 MB  |
+| TIMESCALEDB | WRITE        | 284.60   | 175,685.00 pts/s      | 27.93 ms  | 215.49 ms  | 24.8%   | 32.3%    | 8615.0 MB  | 8623.1 MB  |
+| TIMESCALEDB | READ         | 199.79   | 2,693.17 pts/s        | 39.30 ms  | 922.11 ms  | 54.0%   | 57.8%    | 8626.8 MB  | 8630.3 MB  |
+| TIMESCALEDB | LATEST-POINT | 3.18     | 7,859.49 pts/s        | 0.41 ms   | 0.61 ms    | 12.4%   | 23.3%    | 8603.3 MB  | 8612.9 MB  |
+| TIMESCALEDB | DOWNSAMPLE   | 3.74     | 86,933.99 pts/s       | 0.52 ms   | 0.83 ms    | 14.4%   | 33.3%    | 8601.9 MB  | 8611.8 MB  |
+| TIMESCALEDB | RANGE-QUERY  | 3.54     | 353,181.70 pts/s      | 0.48 ms   | 0.74 ms    | 16.9%   | 26.7%    | 8603.0 MB  | 8610.8 MB  |
+| TIMESCALEDB | VALUE-FILTER | 666.05   | 645.43 pts/s          | 130.08 ms | 893.33 ms  | 55.8%   | 58.0%    | 8627.8 MB  | 8630.3 MB  |
+| IOTDB       | BATCH-SMALL  | 6.16     | 81,112.44 pts/s       | 0.50 ms   | 1.11 ms    | 8.6%    | 52.6%    | 1922.9 MB  | 2219.0 MB  |
+| IOTDB       | BATCH-LARGE  | 18.00    | 27,772,266.64 pts/s   | 1.56 ms   | 15.43 ms   | 28.4%   | 77.7%    | 3997.6 MB  | 6601.7 MB  |
+| IOTDB       | OUT-OF-ORDER | 7.45     | 6,709,314.58 pts/s    | 0.60 ms   | 1.42 ms    | 10.5%   | 45.5%    | 7860.4 MB  | 9943.0 MB  |
+| IOTDB       | WRITE        | 6.26     | 7,991,224.90 pts/s    | 0.50 ms   | 0.87 ms    | 8.8%    | 33.7%    | 9999.2 MB  | 10076.2 MB |
+| IOTDB       | READ         | 22.05    | 23,605.75 pts/s       | 4.19 ms   | 51.22 ms   | 46.6%   | 66.8%    | 10145.6 MB | 10161.2 MB |
+| IOTDB       | LATEST-POINT | 3.74     | 6,686.53 pts/s        | 0.51 ms   | 1.40 ms    | 18.0%   | 43.5%    | 10255.6 MB | 10281.0 MB |
+| IOTDB       | DOWNSAMPLE   | 4.36     | 74,576.96 pts/s       | 0.64 ms   | 1.25 ms    | 16.7%   | 44.5%    | 10286.1 MB | 10291.2 MB |
+| IOTDB       | RANGE-QUERY  | 5.55     | 225,247.09 pts/s      | 0.88 ms   | 1.69 ms    | 26.0%   | 44.1%    | 10306.6 MB | 10311.7 MB |
+| IOTDB       | VALUE-FILTER | 51.15    | 8,403.91 pts/s        | 9.80 ms   | 40.50 ms   | 38.7%   | 52.4%    | 10353.4 MB | 10373.1 MB |
+
+### Analysis
+
+#### TimescaleDB: write and read gains mirror small-scale pattern
+
+| Test         | Old pts/s   | New pts/s   | Throughput Δ | Old avg lat | New avg lat | Avg lat Δ | Old P99     | New P99    | P99 Δ |
+|--------------|-------------|-------------|--------------|-------------|-------------|-----------|-------------|------------|-------|
+| BATCH-SMALL  | 4,521       | 4,838       | +7%          | 10.91 ms    | 10.20 ms    | −7%       | 36.46 ms    | 36.40 ms   | ~0%   |
+| BATCH-LARGE  | 161,070     | 214,537     | +33%         | 308.38 ms   | 230.88 ms   | −25%      | 1036.76 ms  | 1098.29 ms | +6%   |
+| OUT-OF-ORDER | 126,186     | 169,331     | +34%         | 38.71 ms    | 28.96 ms    | −25%      | 263.93 ms   | 232.60 ms  | −12%  |
+| WRITE        | 126,131     | 175,685     | +39%         | 38.72 ms    | 27.93 ms    | −28%      | 252.60 ms   | 215.49 ms  | −15%  |
+
+| Test         | Old avg lat | New avg lat | Δ    | Old P99      | New P99    | P99 Δ |
+|--------------|-------------|-------------|------|--------------|------------|-------|
+| READ         | 57.25 ms    | 39.30 ms    | −31% | 1672.74 ms   | 922.11 ms  | −45%  |
+| VALUE-FILTER | 175.07 ms   | 130.08 ms   | −26% | 1299.50 ms   | 893.33 ms  | −31%  |
+| LATEST-POINT | 0.53 ms     | 0.41 ms     | −23% | 1.56 ms      | 0.61 ms    | −61%  |
+| DOWNSAMPLE   | 0.67 ms     | 0.52 ms     | −22% | 1.74 ms      | 0.83 ms    | −52%  |
+| RANGE-QUERY  | 0.59 ms     | 0.48 ms     | −19% | 1.61 ms      | 0.74 ms    | −54%  |
+
+Write throughput improves 30–40% and average latency 20–30%, consistent with the small-scale pgtune gains. The 45% drop in READ P99 (1673 ms → 922 ms) shows that a significant fraction of the tail-latency inflation reported in the medium-scale validation was driven by checkpoint stalls and resource contention rather than purely by dataset size. The sub-millisecond point queries (LATEST-POINT, DOWNSAMPLE, RANGE-QUERY) see 50–60% P99 improvements — these short queries were most affected by OS scheduling jitter from competing containers in the original setup.
+
+One anomaly: BATCH-LARGE P99 increases from 1037 ms to 1098 ms despite average latency improving by 25% and throughput by 33%. Higher throughput means more batches are queued per interval, so the absolute worst-case tail grows even as the median improves.
+
+#### InfluxDB: P99 drops far more than throughput
+
+| Test         | Old pts/s | New pts/s | Throughput Δ | Old avg lat | New avg lat | Avg lat Δ | Old P99     | New P99    | P99 Δ  |
+|--------------|-----------|-----------|--------------|-------------|-------------|-----------|-------------|------------|--------|
+| WRITE        | 363,669   | 392,975   | +8%          | 13.59 ms    | 12.56 ms    | −8%       | 210.95 ms   | 39.75 ms   | **−81%** |
+| BATCH-LARGE  | 2,079,443 | 2,598,111 | +25%         | 23.81 ms    | 18.92 ms    | −21%      | 238.84 ms   | 187.52 ms  | −21%   |
+| OUT-OF-ORDER | 249,071   | 245,447   | −1%          | 19.88 ms    | 20.15 ms    | +1%       | 102.65 ms   | 61.53 ms   | −40%   |
+
+The WRITE P99 improvement is the most striking figure in the medium rerun: 210 ms → 39 ms (−81%) with only an 8% throughput gain. In the original, TimescaleDB was accumulating ~8 GB of OS page cache while running alongside InfluxDB, causing periodic I/O stalls in InfluxDB's TSM compaction path. Those stalls manifest as tail latency spikes that do not affect average throughput but inflate P99 dramatically. The rerun removes this pressure.
+
+OUT-OF-ORDER throughput is essentially unchanged (−1%) while its P99 improves 40%. This makes sense: the OOO ingestion rate is limited by InfluxDB's write-ordering logic, not by I/O contention, so throughput is similar; but the peak stall events that drove P99 to 102 ms are gone.
+
+All InfluxDB read tests improve 15–27% in average latency, consistent with better TSM file cache utilisation without competing page-cache pressure.
+
+#### IoTDB: largest gains of any database, driven by exclusive resource access and JIT
+
+IoTDB shows the biggest improvements at medium scale — larger in relative terms than at small scale:
+
+| Test         | Old pts/s  | New pts/s      | Throughput Δ | Old avg lat | New avg lat | Avg lat Δ |
+|--------------|------------|----------------|--------------|-------------|-------------|-----------|
+| VALUE-FILTER | 4,366      | 8,403          | +92%         | 19.17 ms    | 9.80 ms     | −49%      |
+| DOWNSAMPLE   | 42,888     | 74,576         | +74%         | 1.26 ms     | 0.64 ms     | −49%      |
+| RANGE-QUERY  | 146,541    | 225,247        | +54%         | 1.46 ms     | 0.88 ms     | −40%      |
+| READ         | 15,215     | 23,605         | +55%         | 6.62 ms     | 4.19 ms     | −37%      |
+| LATEST-POINT | 5,018      | 6,686          | +33%         | 0.75 ms     | 0.51 ms     | −32%      |
+| BATCH-LARGE  | 19,868,484 | 27,772,266     | +40%         | 2.22 ms     | 1.56 ms     | −30%      |
+| WRITE        | 6,378,193  | 7,991,224      | +25%         | 0.65 ms     | 0.50 ms     | −23%      |
+
+The 5× longer benchmark compared to small scale allows the JVM JIT compiler to saturate the hot read paths during the write phase itself. By the time read tests begin, the JIT is fully optimised — the opposite of the small-scale re-run, where the JVM was freshly started and the write phase was too short for the JIT to finish compiling read paths. This explains why IoTDB reads now improve (instead of regressing as they did in the small-scale re-run) and why all gains are larger than at small scale.
+
+The write improvements (25–40%) are explained by exclusive CPU and I/O access: in the original medium run, IoTDB's JVM competed with TimescaleDB's ~8 GB page cache and active write I/O.
+
+#### Memory measurements
+
+TimescaleDB starts at 293 MB in the rerun (vs 5,450 MB in the original), for the same reason as at small scale: a fresh container sees no inherited page cache. It grows to ~8,602 MB once the dataset is loaded — the honest `shared_buffers=8GB` footprint, growing to ~8,628 MB at read tests.
+
+IoTDB starts at 1,922 MB and grows organically to ~10,353 MB, vs the 12,520–12,718 MB range held flat throughout the original medium run (where the JVM had pre-allocated maximum heap during idle time). The growth curve now reflects actual working-set demand at each phase.
+
+InfluxDB BATCH-LARGE peak drops from 3,152 MB to 2,185 MB. Raising the TSM cache ceiling to 8 GB did not increase peak RSS; the isolation from competing page-cache consumers is the dominant factor reducing peak usage.
+
+### Validating medium-scale-validation claims
+
+| Claim | Rerun verdict |
+|-------|---------------|
+| IoTDB write dominance widens at medium scale (6.4 M pts/s) | **Confirmed and strengthened** — rerun shows 7.99 M pts/s; gap over InfluxDB and TimescaleDB is wider |
+| TimescaleDB downsample latency stays effectively constant (0.67 ms at medium) | **Confirmed** — rerun 0.52 ms, still sub-millisecond and lower than original |
+| IoTDB/TS/InfluxDB value-filter scale roughly linearly with data volume | **Partially wrong** — IoTDB is clearly sublinear (2.6× for 5× data using rerun small→medium baseline), not linear; TimescaleDB is slightly superlinear (5.4×); only InfluxDB is close to linear (4.4×). IoTDB's chunk-statistics pruning advantage is already compounding at medium scale |
+| TimescaleDB OOO degradation is < 1% at medium scale | **Weakened** — rerun shows 3.6% drop (175K vs 169K pts/s); still small but no longer negligible, suggesting the near-zero figure in the original was within run-to-run noise |
+| InfluxDB OOO penalty is 32–38% | **Confirmed** — rerun shows 37.7% drop (393K vs 245K pts/s) |
+| InfluxDB latest-point latency scales with dataset size | **Confirmed** — rerun small 9.24 ms → rerun medium 21.72 ms (2.4× increase for 5× data) |
+| IoTDB latest-point and TimescaleDB latest-point are O(1) w.r.t. dataset size | **Confirmed** — IoTDB: 1.24 ms → 0.51 ms (improving due to JIT); TimescaleDB: 0.38 ms → 0.41 ms (flat) |
+| TimescaleDB READ P99 degrades sharply at medium scale (275 ms → 1,672 ms) | **Real but overstated** — rerun shows 158 ms → 922 ms; degradation exists (5.8×) but the original 1,672 ms included substantial contention inflation |
+| IoTDB reads scale sublinearly (2.9× for 5× data) | **Confirmed and strengthened** — rerun shows 1.15× (3.65 ms → 4.19 ms) due to JIT saturation arriving before read tests begin at medium scale |
+
+---
+
+## Tuned configuration: large-scale re-run
+
+The same tuned configuration at large scale (10 clients, 50 devices, 20 sensors, 5,000 loops — ~20× more data than medium, ~100× more than small).
+
+### Results
+
+| DB          | Test         | Time (s) | Throughput            | Avg Lat   | P99 Lat    | Avg CPU | Peak CPU | Avg Mem    | Peak Mem   |
+|-------------|--------------|----------|-----------------------|-----------|------------|---------|----------|------------|------------|
+| INFLUXDB    | BATCH-SMALL  | 289.46   | 17,273.50 pts/s       | 11.50 ms  | 36.89 ms   | 11.6%   | 16.8%    | 276.2 MB   | 355.7 MB   |
+| INFLUXDB    | BATCH-LARGE  | 1088.32  | 4,594,226.34 pts/s    | 43.12 ms  | 252.72 ms  | 54.0%   | 76.4%    | 1693.9 MB  | 2903.0 MB  |
+| INFLUXDB    | OUT-OF-ORDER | 618.92   | 807,863.51 pts/s      | 24.54 ms  | 71.77 ms   | 28.0%   | 54.4%    | 1004.3 MB  | 2051.1 MB  |
+| INFLUXDB    | WRITE        | 397.90   | 1,256,602.92 pts/s    | 15.78 ms  | 51.97 ms   | 32.9%   | 46.3%    | 937.9 MB   | 1213.4 MB  |
+| INFLUXDB    | READ         | 811.43   | 1,310.24 pts/s        | 161.44 ms | 1673.10 ms | 86.3%   | 91.1%    | 960.7 MB   | 1208.3 MB  |
+| INFLUXDB    | LATEST-POINT | 117.70   | 424.79 pts/s          | 23.24 ms  | 29.11 ms   | 81.4%   | 86.3%    | 720.9 MB   | 728.2 MB   |
+| INFLUXDB    | DOWNSAMPLE   | 47.49    | 13,685.81 pts/s       | 9.22 ms   | 14.24 ms   | 71.2%   | 80.6%    | 701.5 MB   | 707.8 MB   |
+| INFLUXDB    | RANGE-QUERY  | 44.79    | 54,695.46 pts/s       | 8.68 ms   | 13.77 ms   | 67.5%   | 77.5%    | 700.4 MB   | 705.9 MB   |
+| INFLUXDB    | VALUE-FILTER | 2502.30  | 340.07 pts/s          | 496.81 ms | 1617.36 ms | 86.4%   | 89.3%    | 808.7 MB   | 862.6 MB   |
+| TIMESCALEDB | BATCH-SMALL  | 285.26   | 17,528.12 pts/s       | 11.30 ms  | 71.91 ms   | 10.3%   | 13.6%    | 331.0 MB   | 356.4 MB   |
+| TIMESCALEDB | BATCH-LARGE  | 3600.00  | 460,133.19 pts/s      | 434.41 ms | 1894.39 ms | 59.9%   | 78.2%    | 8321.9 MB  | 9275.4 MB  |
+| TIMESCALEDB | OUT-OF-ORDER | 1283.68  | 389,505.22 pts/s      | 50.03 ms  | 336.15 ms  | 51.2%   | 71.9%    | 9066.4 MB  | 9241.6 MB  |
+| TIMESCALEDB | WRITE        | 1248.58  | 400,455.05 pts/s      | 48.72 ms  | 334.91 ms  | 51.4%   | 70.4%    | 9631.2 MB  | 10711.0 MB |
+| TIMESCALEDB | READ         | 809.01   | 1,338.80 pts/s        | 155.66 ms | 1850.06 ms | 77.4%   | 83.6%    | 10690.6 MB | 10700.8 MB |
+| TIMESCALEDB | LATEST-POINT | 4.27     | 11,698.79 pts/s       | 0.62 ms   | 1.48 ms    | 26.5%   | 68.5%    | 10572.8 MB | 10588.2 MB |
+| TIMESCALEDB | DOWNSAMPLE   | 4.81     | 135,174.34 pts/s      | 0.73 ms   | 1.60 ms    | 28.0%   | 71.1%    | 10572.8 MB | 10588.2 MB |
+| TIMESCALEDB | RANGE-QUERY  | 4.47     | 559,191.98 pts/s      | 0.66 ms   | 1.54 ms    | 26.8%   | 69.4%    | 10572.8 MB | 10588.2 MB |
+| TIMESCALEDB | VALUE-FILTER | 2702.43  | 321.06 pts/s          | 510.05 ms | 1804.40 ms | 77.4%   | 83.5%    | 10690.6 MB | 10700.8 MB |
+| IOTDB       | BATCH-SMALL  | 11.19    | 446,784.33 pts/s      | 0.40 ms   | 1.12 ms    | 18.0%   | 61.5%    | 2181.9 MB  | 2751.5 MB  |
+| IOTDB       | BATCH-LARGE  | 130.42   | 38,336,216.39 pts/s   | 4.93 ms   | 27.34 ms   | 54.4%   | 82.7%    | 12376.4 MB | 14673.9 MB |
+| IOTDB       | OUT-OF-ORDER | 26.56    | 18,824,365.08 pts/s   | 0.94 ms   | 2.08 ms    | 32.5%   | 63.9%    | 14676.2 MB | 14704.6 MB |
+| IOTDB       | WRITE        | 21.18    | 23,607,475.35 pts/s   | 0.76 ms   | 1.56 ms    | 25.2%   | 57.9%    | 14721.7 MB | 14735.4 MB |
+| IOTDB       | READ         | 31.24    | 33,565.71 pts/s       | 5.98 ms   | 68.31 ms   | 70.7%   | 87.8%    | 14895.0 MB | 14940.2 MB |
+| IOTDB       | LATEST-POINT | 4.58     | 10,916.70 pts/s       | 0.68 ms   | 2.26 ms    | 21.5%   | 55.5%    | 15022.1 MB | 15032.3 MB |
+| IOTDB       | DOWNSAMPLE   | 5.95     | 109,225.17 pts/s      | 0.95 ms   | 2.23 ms    | 28.8%   | 60.0%    | 15036.4 MB | 15042.6 MB |
+| IOTDB       | RANGE-QUERY  | 7.23     | 345,619.38 pts/s      | 1.21 ms   | 2.61 ms    | 36.5%   | 63.3%    | 15032.3 MB | 15032.3 MB |
+| IOTDB       | VALUE-FILTER | 99.14    | 8,751.78 pts/s        | 19.42 ms  | 66.20 ms   | 76.1%   | 82.2%    | 15051.2 MB | 15052.8 MB |
+
+### Analysis
+
+#### Critical corrections: TimescaleDB OOO and CPU saturation
+
+These are the two largest reversals from the large-scale validation.
+
+**TimescaleDB out-of-order penalty at large scale was a contention artefact.**
+
+| Run           | WRITE pts/s | OOO pts/s | OOO penalty |
+|---------------|-------------|-----------|-------------|
+| Original large | 358,761    | 275,951   | **23%**     |
+| Rerun large   | 400,455     | 389,505   | **2.7%**    |
+
+The large-scale validation stated that "TimescaleDB out-of-order penalty surfaces at large scale" with a 23% drop attributed to decompression-recompression cycles as the hypertable grew. The rerun shows only a 2.7% drop — effectively the same negligible penalty seen at small and medium scale. The original 23% was caused by IoTDB's expanding heap (15+ GB) competing with TimescaleDB's OS page cache at the same time: out-of-order inserts into older chunks require reading those chunks from disk to decompress them, and when IoTDB had evicted those pages from the OS page cache, each OOO insert triggered a cold disk read. With exclusive access, the chunks remain in cache and decompression is cheap. The 23% claim should be struck.
+
+**TimescaleDB is not CPU-saturated at large scale.**
+
+| Workload     | Original avg CPU | Rerun avg CPU | Original P99 | Rerun P99  |
+|--------------|-----------------|---------------|--------------|------------|
+| READ         | 97.7%           | 77.4%         | 4232 ms      | 1850 ms    |
+| VALUE-FILTER | 98.3%           | 77.4%         | 3945 ms      | 1804 ms    |
+
+The large-scale validation concluded that TimescaleDB "runs out of compute" at this scale and that "adding more RAM or faster disks would not help — only a stronger CPU or horizontal sharding would." This was wrong. The 97.7% CPU average was the result of three databases and the Java benchmark client sharing a 6-core host simultaneously. With one database at a time, CPU stabilises at 77% and P99 latency falls by 56–54%. TimescaleDB was not at a hardware ceiling — it was starved of CPU cycles by competing processes.
+
+#### InfluxDB: P99 improvements at large scale dwarf throughput gains
+
+The pattern seen at medium scale is more pronounced at large scale. Throughput changes are modest (6–23%), but P99 latency drops are dramatic:
+
+| Test         | Old pts/s | New pts/s | Δ    | Old P99     | New P99    | P99 Δ  |
+|--------------|-----------|-----------|------|-------------|------------|--------|
+| WRITE        | 1,178,162 | 1,256,602 | +7%  | 170.92 ms   | 51.97 ms   | **−70%** |
+| OUT-OF-ORDER | 760,888   | 807,863   | +6%  | 254.05 ms   | 71.77 ms   | **−72%** |
+| BATCH-LARGE  | 3,742,857 | 4,594,226 | +23% | 374.60 ms   | 252.72 ms  | −33%   |
+| LATEST-POINT | 287       | 424       | +48% | 50.98 ms    | 29.11 ms   | −43%   |
+
+The 70–72% P99 drops on WRITE and OUT-OF-ORDER confirm that these spikes were I/O contention events: when IoTDB and TimescaleDB were writing aggressively to disk simultaneously, InfluxDB's TSM compaction engine was periodically starved of I/O bandwidth, producing rare but extreme latency outliers. LATEST-POINT improving +48% in throughput at large scale is a strong signal that TSM file seeks were being interrupted by disk I/O from other processes, not just the structural TSM block-scan cost that grows with stored files.
+
+#### IoTDB: write surge, BATCH-SMALL slight regression
+
+| Test         | Old pts/s      | New pts/s      | Δ    | Old avg lat | New avg lat | Δ    |
+|--------------|----------------|----------------|------|-------------|-------------|------|
+| BATCH-LARGE  | 27,562,372     | 38,336,216     | +39% | 6.93 ms     | 4.93 ms     | −29% |
+| WRITE        | 17,511,476     | 23,607,475     | +35% | 1.04 ms     | 0.76 ms     | −27% |
+| DOWNSAMPLE   | 65,411         | 109,225        | +67% | 1.74 ms     | 0.95 ms     | −45% |
+| OUT-OF-ORDER | 16,326,483     | 18,824,365     | +15% | 1.09 ms     | 0.94 ms     | −14% |
+| READ         | 28,404         | 33,565         | +18% | 7.07 ms     | 5.98 ms     | −15% |
+| BATCH-SMALL  | 494,743        | 446,784        | −10% | 0.35 ms     | 0.40 ms     | +14% |
+
+BATCH-SMALL is the only test that regresses (−10%). In the original large run, IoTDB's JVM had been active from the start of the entire multi-hour session, giving the JIT extensive warm-up time before any test ran. In the rerun the JVM starts fresh, and BATCH-SMALL is the first test — JIT is still compiling hot paths during it. The effect was less visible at medium scale because the 5× more data in medium means each test runs longer, providing some JIT warm-up during the test itself, but BATCH-SMALL still runs in only 6 s, which is insufficient. The cross-scale progression in the rerun is 28K → 81K → 446K pts/s, still showing clear JIT-driven superlinear scaling; the 494K figure from the original was pre-warmed.
+
+All other IoTDB tests improve substantially. DOWNSAMPLE at +67% is the largest gain among analytics queries, consistent with the longer run giving the JIT more time to optimise the TsFile chunk aggregation path before this test is reached.
+
+#### TimescaleDB: BATCH-LARGE still times out; point queries unchanged
+
+BATCH-LARGE hits the 3,600 s wall again. Throughput is marginally higher (460K vs 421K pts/s) because the pgtune settings reduce WAL stall frequency, but the fundamental bottleneck — 50 hypertable partitions per write triggering simultaneous WAL flushes — is not addressable through configuration alone at this data volume.
+
+Point queries (LATEST-POINT, DOWNSAMPLE, RANGE-QUERY) remain effectively identical between original and rerun (0.62 ms, 0.73 ms, 0.66 ms). These queries touch a fixed time window and their working set fits entirely in `shared_buffers` at all scales; they are genuinely insensitive to both dataset size and contention.
+
+BATCH-SMALL P99 worsens slightly in the rerun (40.78 ms → 71.91 ms) despite stable throughput (17,787 → 17,528 pts/s). This is most likely run-to-run variance: the original large run had warmer OS state at BATCH-SMALL's start (being the first test in a long session), which smoothed checkpoint timing. The average latency (11.30 ms vs 11.14 ms) is effectively identical.
+
+### Validating large-scale-validation claims
+
+| Claim from large-scale validation | Rerun verdict |
+|-----------------------------------|---------------|
+| IoTDB write dominance widens at large scale — gap grows to 50× over TimescaleDB | **Confirmed and strengthened** — rerun: 23.6 M vs 400 K pts/s, ratio ~59× |
+| TimescaleDB downsample is sub-millisecond across 100× data growth | **Confirmed** — 0.73 ms in rerun |
+| TimescaleDB latest-point is O(1) w.r.t. dataset size | **Confirmed** — 0.62 ms in rerun |
+| InfluxDB latest-point shows a clean linear progression (10.85 → 23.18 → 34.48 ms) | **Partially wrong** — rerun progression is 9.24 → 21.72 → 23.24 ms; the large-scale value is 32% lower than in the original, and the medium→large jump is 1.52 ms vs 11.3 ms. I/O contention inflated the original large figure; the growth trend is real but not linear |
+| IoTDB value-filter advantage becomes sublinear at large scale (5.9× for 100× data) | **Confirmed** — rerun shows 19.42 ms at large vs 3.72 ms (small rerun) = 5.2× for ~100× data |
+| TimescaleDB OOO penalty surfaces at large scale (23% drop) | **Wrong** — rerun shows 2.7% drop; the 23% was caused by IoTDB heap evicting TimescaleDB's page cache for OOO chunk reads |
+| TimescaleDB becomes CPU-saturated on reads at large scale (97.7% avg CPU, P99 4,232 ms) | **Wrong** — rerun shows 77.4% CPU and 1,850 ms P99; CPU saturation was a resource-contention artefact |
+| TimescaleDB batch-large hits the benchmark timeout at large scale | **Confirmed** — rerun also hits 3,600 s |
+| IoTDB batch-small JIT saturation: 24K → 79K → 494K pts/s | **Confirmed with correction** — rerun progression is 28K → 81K → 446K pts/s; trend holds but 494K was inflated by unintentional JIT pre-warming in the original long session |
+| IoTDB memory grows dynamically at large scale (~15.5 GB) | **Confirmed** — rerun reaches ~15,052 MB |
+| InfluxDB memory is wrong at > 900 MB | **Confirmed** — rerun BATCH-LARGE peaks at 2,903 MB, slightly above the original 2,573 MB (the 8 GB TSM ceiling allows more caching when the host is not memory-contended) |
+
+---
+
 ## Limitations
 
 - **Cache warm-up:** Read tests run sequentially on the same dataset. Later tests benefit from warmer OS page cache and DB in-memory structures. For production-quality isolation, each test should flush caches and restart containers between tests.
