@@ -158,6 +158,13 @@ points per call will appear to have far higher pts/s than a latest-point query t
 exactly one point per call. These figures are therefore not comparable across read test types.
 \textbf{Latency} is used exclusively as the primary read comparison metric in this section.
 
+A methodological note relevant to all read comparisons: read tests run sequentially on the
+same dataset within a session, so later tests benefit from warmer OS page caches and
+in-memory database structures (see Section~\ref{sec:limitations}). Where warm-cache effects
+are the stated mechanism for a database's performance --- such as TimescaleDB's
+\texttt{shared\_buffers} for downsampling --- this is an expected and reproducible property
+under normal operating conditions, not an artefact.
+
 \subsubsection{Latest-Point Queries}
 
 Table~\ref{tab:latest} shows latest-point average latency across all three scales for the
@@ -460,6 +467,22 @@ These two reversals underscore the importance of isolated, correctly-tuned bench
 methodology. Without sequential container lifecycles and standard database configuration,
 both claims would have been published as validated findings.
 
+\subsection{Mixed Read Workload}
+
+The \texttt{read} workload runs all ten iot-benchmark query types with equal weight,
+providing a composite read baseline that includes range queries, aggregations, downsampling,
+latest-point lookups, and value-predicate queries simultaneously. At small scale (tuned),
+TimescaleDB averages 0.67\,ms, IoTDB averages 2.11\,ms, and InfluxDB averages 14.28\,ms
+per operation across the combined set. These figures are consistent with the individual
+query results presented above: TimescaleDB dominates for time-windowed queries, which
+constitute the majority of the ten types, while IoTDB's advantage on value-filter queries
+is diluted by the equal weighting.
+
+The mixed workload's primary analytical role in this study is as a tuning benchmark
+(Table~\ref{tab:tsdb-tuning}): TimescaleDB's READ latency improved 38\% after pgtune,
+confirming that multiple query types --- not only value-filter --- benefit from a correctly
+sized buffer pool.
+
 \subsection{Summary}
 \label{sec:results-summary}
 
@@ -474,9 +497,9 @@ Table~\ref{tab:summary} consolidates the workload-winner mapping across all test
     \textbf{Workload} & \textbf{Best DB} & \textbf{Key architectural reason} \\
     \hline
     Sequential ingestion (ordered)     & IoTDB       & Binary tablet protocol + in-memory buffering before TsFile flush \\
-    Bulk loading (BATCH=1000)          & IoTDB       & Columnar vectorised write path; 38M pts/s at large scale \\
+    Bulk loading (BATCH=1000)          & IoTDB       & Columnar vectorised write path; 11.8\,M pts/s at small scale \\
     Single-point ingestion (BATCH=1)   & IoTDB       & Lower per-call Thrift overhead vs HTTP round-trip \\
-    Out-of-order (absolute throughput) & InfluxDB    & Higher absolute OOO pts/s at every scale \\
+    Out-of-order (absolute throughput) & IoTDB       & 1.87\,M pts/s OOO vs 255\,K (InfluxDB); leads at every scale \\
     Out-of-order (relative tolerance)  & TimescaleDB & B-tree updates are order-independent \\
     Dashboard downsampling             & TimescaleDB & \texttt{time\_bucket()} in hot \texttt{shared\_buffers}; constant latency \\
     Bulk time-range export             & TimescaleDB & Chunk pruning + warm OS page cache \\

@@ -56,13 +56,14 @@ scale: \textbf{H} (strong), \textbf{M} (moderate), \textbf{L} (weak).
     Sequential write throughput   & \textbf{H} & M & L & 2.2\,M / 397\,K / 174\,K pts/s (small) \\
     Bulk-load throughput (B=1000) & \textbf{H} & H & M & 11.8\,M / 2.7\,M / 214\,K pts/s \\
     Single-point write (B=1)      & \textbf{H} & M & L & 28\,K / 5\,K / 5\,K pts/s \\
+    Out-of-order throughput (abs.) & \textbf{H} & L & L & 1.87\,M / 255\,K / 160\,K pts/s; IoTDB leads at every scale \\
     Out-of-order tolerance (rel.) & M & L & \textbf{H} & $-$13\% / $-$36\% / $-$8\% penalty \\
     Latest-value latency          & H & \textbf{L} & \textbf{H} & 1.24 / 9.24 / 0.38\,ms; InfluxDB scales poorly \\
     Downsampling latency          & H & M & \textbf{H} & 1.81 / 5.71 / 0.61\,ms; TimescaleDB constant \\
     Time-range export             & H & M & \textbf{H} & 1.19 / 5.41 / 0.54\,ms \\
     Value-filter latency          & \textbf{H} & M & L & 3.72 / 71.09 / 23.98\,ms; IoTDB sublinear \\
     Value-filter at large scale   & \textbf{H} & M & L & 19.4 / 496.8 / 510.0\,ms \\
-    Memory footprint (write)      & L & \textbf{H} & H & $\sim$3\,GB / $\sim$190\,MB / $\sim$239\,MB start \\
+    Memory footprint (write)      & L & \textbf{H} & H & $\sim$1.7\,GB / $\sim$190\,MB / $\sim$239\,MB start \\
     Memory footprint (steady)     & L & M & H & $\sim$10\,GB / 900\,MB / 1.8\,GB \\
     SQL / relational support      & L & L & \textbf{H} & IoTDB SQL dialect; Flux only; full PostgreSQL \\
     Ecosystem and tooling         & M & M & \textbf{H} & Growing; mature TS; full PG ecosystem \\

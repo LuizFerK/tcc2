@@ -75,11 +75,27 @@ Institute of ..., University ..., Address, City, State, CEP, Brazil.
 
 
 \begin{abstract-en}
-This text, formatted as a scientific article, aims to present the new SBC paper template, describing its main features and explaining how it should be used. This version, more specifically, should be used exclusively for articles written in Portuguese that will be published in any event proceeding series at SBC OpenLib. The abstract in Portuguese, as you can see in this example, must be before the abstract in English and must have between 500 and 750 words.
+The rapid growth of Internet of Things deployments has generated unprecedented volumes of
+time-stamped sensor data, exposing the limitations of traditional databases and driving the
+adoption of specialized Time Series Databases (TSDBs). Despite growing interest, most published
+TSDB benchmarks lack sufficient scripts and configurations for independent replication.
+
+This paper presents a controlled, reproducible benchmark comparing Apache IoTDB~1.3.0,
+InfluxDB~2.7, and TimescaleDB (PostgreSQL~15) across nine IoT workload types at three
+data-volume scales spanning 100$\times$ in data size, using a fully scripted infrastructure
+built on Docker Compose, Nix, and iot-benchmark.
+
+Results show that no single database dominates all workloads. IoTDB leads on write throughput
+(23.6\,M\,pts/s at large scale) and value-filter scaling (5.2$\times$ latency growth for
+100$\times$ data). TimescaleDB provides sub-millisecond downsampling across all scales and the
+fastest latest-point lookups, backed by full SQL compatibility. InfluxDB offers a balanced
+middle ground with lower memory requirements. A key finding is that shared-resource benchmark
+environments produce misleading results: two conclusions from the initial runs were reversed
+by isolated reruns, underscoring that resource isolation is a prerequisite for valid comparisons.
 \end{abstract-en}
 
 \begin{keywords}
-Proceedings, Template, SBC OpenLib, Indexing
+Time Series Databases, Benchmarking, Apache IoTDB, InfluxDB, TimescaleDB, IoT, Reproducibility
 \end{keywords}
 
 \begin{dates}
@@ -107,75 +123,24 @@ Proceedings, Template, SBC OpenLib, Indexing
 
 \begin{declarations}
 
-\begin{acknowledgements}
-THIS DECLARATION IS OPTIONAL.
-This is a multiline text of acknowledgments.
-Lorem ipsum dolor sit amet, consectetur adipiscing elit,
-sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-\end{acknowledgements}
-
-\begin{funding}
-THIS DECLARATION IS OPTIONAL. This research was funded by lorem ipsum dolor sit amet, consectetur adipiscing elit.
-\end{funding}
-
 \begin{contributions}
-THIS DECLARATION IS MANDATORY.
-\textit{Consider the SBC Code of Conduct.
-Participation in authorship: All authors of a published work
-or submitted for publication are expected to have actively participated in the respective work.}
-We suggest that authors describe their contribution using
-the CRediT Taxonomy (\href{https://credit.niso.org/}{https://credit.niso.org/}) as in this example:
-JV contributed to the design of this study. CB, RP, and CM performed the experiments.
-JV is the primary contributor and writer of this manuscript.
-All authors read and approved the final manuscript.
+L.F.K. designed the study, implemented the benchmark infrastructure, performed all experiments,
+analyzed the results, and wrote the manuscript.
 \end{contributions}
 
 \begin{interests}
-THIS DECLARATION IS MANDATORY. If there are no competing interests, the authors should declare: ``The authors declare that they have no competing interests''. Otherwise, the declaration should be: ``The authors declare that they have the following competing interests, lorem ipsum dolor sit amet, consectetur adipiscing elit.''
+The authors declare that they have no competing interests.
 \end{interests}
 
 \begin{materials}
-THIS DECLARATION IS MANDATORY.
-\textit{Consider the SBC Code of Conduct.
-Reproducibility of research results:
-Where applicable, it is recommended that articles indicate
-the public availability of material used in the reviews,
-to facilitate the reproduction of the respective results by other researchers.}
-%
-If the authors have made their data and/or code publicly available, the statement should read:
-``The data and other materials created and/or used in this literature review
-are available at \ldots''.
-Otherwise, the statement should read:
-``The data and other materials created and/or used in this literature review
-will be made available upon request''.
-%
-All supplementary material made publicly available by the authors will appear
-on the article's publication page if accepted.
+The benchmark scripts, Docker Compose configurations, Nix flake environment, and result datasets
+created and used in this study are publicly available at
+\url{https://github.com/LuizFerK/tcc2}.
 \end{materials}
 
 \begin{aitools}
-THIS DECLARATION IS MANDATORY.
-\textit{Consider the SBC Code of Conduct.
-Use of Generative Artificial Intelligence (AI):
-The use of generative AI tools and technologies for content generation,
-in writing and/or reviewing the content of articles, must be explicitly declared in the paper.}
-The declaration should appear in this section, specifically defined for this purpose.
-The tools (and their versions) should be listed and where they were used, for example,
-texts, tables, graphs, citations, etc.
-These tools \textbf{may not} be listed as authors of an article.
-The use of such tools does not exempt the authors from responsibility
-for all of their content, including if plagiarism is identified.
-%
-If the authors did not use such tools, the statement should be:
-``The authors did not use generative AI tools in the development of the study.''
+Claude Code (Anthropic, claude-sonnet-4-6) was used exclusively to assist in generating the Python scripts for benchmark runs and Matplotlib data analysis. The author independently performed all experimental design, result interpretation, and manuscript writing. All analytical conclusions and final decisions were made solely by the author, who takes full responsibility for the content.
 \end{aitools}
-
-\begin{furtherinformation}
-Manuscripts must explicitly
-\textbf{indicate how the ethical issues of the research were addressed and managed},
-including the research approval by an ethics committee when applicable.
-\end{furtherinformation}
 
 \end{declarations}
 
