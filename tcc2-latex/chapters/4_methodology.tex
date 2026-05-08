@@ -1,1 +1,278 @@
 \section{Methodology}
+\label{sec:methodology}
+
+\subsection{Research Design}
+
+This work adopts a controlled experimental approach to compare three time-series databases
+across nine distinct IoT workload patterns and three data-volume scales. The evaluation covers
+write throughput, per-operation latency (average and 99th-percentile), and resource consumption
+(CPU and memory) for each combination of database, workload type, and scale. The goal is to
+characterize which architectural trade-offs favour which application profiles, going beyond
+aggregate rankings to explain \textit{why} each database performs as it does.
+
+A central design objective beyond performance measurement is \textit{reproducibility}.
+The comparative literature reviewed in this work reveals a systemic gap: of the five recent
+TSDB performance studies analyzed, only one published sufficient scripts and configurations
+for independent replication~\cite{pereira2023mulletbench}. The others either omitted
+configurations entirely, described their setups in prose too vague to follow mechanically,
+or used toolchains that require institutional access~\cite{shah2022performance,naqvi2017influxdb,
+lima2024avaliando,wang2023iotdb}. This work treats reproducibility as a first-class output:
+every component needed to replicate the results is version-pinned and publicly available
+alongside this paper.
+
+\subsection{Database Selection}
+
+The three databases were selected to represent distinct architectural approaches to
+time-series storage, each identified as a leading system in the reviewed literature.
+
+\textbf{InfluxDB 2.7} is the de facto reference standard in TSDB comparative research,
+appearing in four of the five performance studies reviewed~\cite{naqvi2017influxdb,
+shah2022performance,lima2024avaliando,wang2023iotdb}. It uses a TSM (Time-Structured Merge
+Tree) storage engine that organizes data into compressed time-ordered blocks. Ingestion
+occurs via an HTTP line-protocol API; analytics queries use the Flux expression language.
+InfluxDB's ubiquity in prior benchmarks makes it an essential comparison anchor: any new
+study that omits it loses comparability with the existing literature.
+
+\textbf{Apache IoTDB 1.3.0}~\cite{wang2023iotdb} emerged as the performance leader in
+the two most recent comparative studies~\cite{pereira2023mulletbench,wang2023iotdb},
+representing a shift from the InfluxDB dominance reported in older benchmarks.
+Developed at Tsinghua University specifically for industrial IoT, it uses a custom columnar
+file format (TsFile) and a binary Thrift RPC protocol (SESSION\_BY\_TABLET). Write ingestion
+is buffered in a JVM-managed heap before being flushed to disk as sorted columnar segments,
+enabling exceptionally high throughput for ordered time-series streams. Its rapid rise in
+recent benchmarks, combined with its distinct architectural approach, made it a natural
+candidate for this study.
+
+\textbf{TimescaleDB} extends PostgreSQL~15 with time-series capabilities: automatic
+hypertable partitioning by time interval, the \texttt{time\_bucket()} aggregation function
+for downsampling, and optional chunk-level compression. It retains the full relational engine
+with WAL-based durability, MVCC concurrency control, B-tree indexes, and complete SQL
+compatibility. For organisations with existing PostgreSQL infrastructure, or for applications
+requiring joins between time-series and relational data, it provides a path to time-series
+capability without abandoning the relational ecosystem. It appears in three of the five
+reviewed benchmarks~\cite{shah2022performance,lima2024avaliando,wang2023iotdb}.
+
+Plain PostgreSQL without the TimescaleDB extension was explicitly excluded. TimescaleDB
+supersedes it for this domain: any conclusion drawn from TimescaleDB is directly applicable
+to a PostgreSQL deployment, and including both would duplicate tests without producing
+additional insight.
+
+\subsection{Benchmark Tool}
+\label{sec:benchmark-tool}
+
+The workload generator is \textit{iot-benchmark}~\cite{iotbenchmark}, developed at Tsinghua
+University, which ships purpose-built Java clients for all three databases under evaluation.
+This native multi-database support means each workload is expressed in the correct protocol
+for each target: the Thrift SESSION\_BY\_TABLET interface for IoTDB, the HTTP line-protocol
+for InfluxDB, and a JDBC connection for TimescaleDB. A consistent, parameterized interface
+ensures that differences in measured performance reflect the databases themselves rather
+than the benchmarking layer.
+
+Alternative tools were evaluated. The Time Series Benchmark Suite (TSBS) offers a mature
+multi-database framework but lacks native IoTDB support at the time of this writing.
+Apache JMeter, used in Lima et al.~\cite{lima2024avaliando}, handles HTTP-based systems well
+but requires custom scripting for Thrift and JDBC interfaces, introducing potential tool-specific
+overhead. iot-benchmark's uniform interface and IoT-specific workload semantics ---
+concurrent clients organized into device and sensor hierarchies, configurable batch sizes,
+and Poisson-distributed out-of-order data generation --- made it the most appropriate choice
+for this study.
+
+The tool produces two structured output matrices that are parsed by the orchestration layer.
+The Result Matrix reports total operations, elapsed time, and aggregate throughput (pts/s).
+The Latency Matrix reports average, minimum, maximum, and percentile latencies per operation
+type, providing the per-operation tail-behavior data needed to evaluate real-time IoT workloads.
+
+\subsection{Workload Design}
+\label{sec:workload}
+
+The benchmark covers nine workload types across two categories, designed to span the range
+of patterns encountered in production IoT systems.
+
+\subsubsection{Write Tests}
+
+Four write tests exercise distinct ingestion patterns:
+
+\begin{description}
+  \item[\texttt{write}] Baseline sequential ingestion with ordered timestamps and the
+  default batch size of 100 rows per request. This measures raw sustained write throughput
+  under ideal, ordered conditions.
+
+  \item[\texttt{out-of-order}] Twenty percent of data points arrive with timestamps older
+  than the current ingestion frontier, modeled as a Poisson-distributed delay. This simulates
+  IoT sensors that lose connectivity and later replay buffered readings --- a ubiquitous
+  pattern in industrial and field deployments where sensors operate over unreliable cellular
+  or LPWAN networks.
+
+  \item[\texttt{batch-small}] \texttt{BATCH\_SIZE=1}: one data point per write request.
+  This isolates per-request protocol overhead: an HTTP round-trip plus line-protocol parsing
+  for InfluxDB, a full PostgreSQL client-server cycle plus WAL flush for TimescaleDB, and a
+  single Thrift RPC call for IoTDB.
+
+  \item[\texttt{batch-large}] \texttt{BATCH\_SIZE=1000}: 1{,}000 data points per request.
+  This tests bulk-loading efficiency and reveals the practical ceiling of each database's
+  batching architecture. The ratio between \texttt{batch-small} and \texttt{batch-large}
+  throughput directly quantifies how much per-request overhead dominates over data-transfer cost.
+\end{description}
+
+Each write test clears and re-seeds the database before running to ensure independent,
+history-free measurements.
+
+\subsubsection{Read Tests}
+
+Five read tests cover the query patterns most common in IoT analytics pipelines:
+
+\begin{description}
+  \item[\texttt{latest-point}] Retrieves the most recent value for each sensor. This is
+  the foundational real-time monitoring query: a dashboard or alerting system continuously
+  polling current device state.
+
+  \item[\texttt{downsample}] Executes \texttt{GROUP~BY} time-bucket queries computing
+  averages over fixed time windows. This models the standard dashboard aggregation use case,
+  where raw sensor readings are collapsed into minute- or hour-level summaries.
+
+  \item[\texttt{range-query}] Retrieves all data points within a specified time window,
+  without filtering on values. This models historical data export, replay pipelines, and
+  model retraining ingestion.
+
+  \item[\texttt{value-filter}] Applies value predicates such as \texttt{temperature~>~85.0},
+  including aggregations over value-filtered ranges. This models threshold alerting:
+  ``find all sensor readings exceeding the alarm level in the past hour.'' Value-filter is
+  the most architecturally discriminating query type in this benchmark because it cannot be
+  answered from time-based indexes alone: each database must either maintain a secondary
+  index or scan all stored values.
+
+  \item[\texttt{read}] Runs all ten query types supported by iot-benchmark with equal weight,
+  providing a comprehensive mixed-workload baseline.
+\end{description}
+
+All read tests operate on the dataset loaded by the preceding baseline \texttt{write} test.
+
+\subsection{Scale Parameters}
+\label{sec:scale-params}
+
+Three data-volume scales are defined to expose how performance characteristics evolve with
+dataset size. Table~\ref{tab:scales} summarizes the parameters.
+
+\begin{table}[ht]
+  \centering
+  \caption{Benchmark scale parameters. All scales use a default batch size of 100 rows per
+           request. Large scale contains ${\sim}100\times$ more data than small.}
+  \label{tab:scales}
+  \begin{tabular}{lrrrrr}
+    \hline
+    \textbf{Scale} & \textbf{Clients} & \textbf{Devices} & \textbf{Sensors} & \textbf{Loops} & \textbf{Duration} \\
+    \hline
+    Small  &  5 & 10 & 10 & 1{,}000 & ${\sim}$5 min \\
+    Medium &  5 & 10 & 10 & 5{,}000 & ${\sim}$30 min \\
+    Large  & 10 & 50 & 20 & 5{,}000 & ${\sim}$2 h \\
+    \hline
+  \end{tabular}
+\end{table}
+
+Large scale contains approximately 20$\times$ more data than medium and 100$\times$ more
+than small, driven by both a higher loop count and an expanded topology (10 clients
+$\times$ 50 devices $\times$ 20 sensors versus 5~$\times$~10~$\times$~10). Multi-scale
+measurement is essential because several key characteristics --- JVM JIT compilation
+saturation, buffer exhaustion, checkpoint stall patterns, and index scan scaling --- only
+manifest or become dominant at higher data volumes. A single-scale benchmark risks drawing
+conclusions that apply only to a narrow data range.
+
+\subsection{Infrastructure and Reproducibility}
+\label{sec:infrastructure}
+
+Reproducibility in this project rests on three components.
+
+\textbf{Docker Compose}~\cite{docker} manages the database containers with pinned image
+versions: \texttt{apache/iotdb:1.3.0-standalone}, \texttt{influxdb:2.7-alpine}, and
+\texttt{timescale/timescaledb:latest-pg15}. Containers are started and stopped
+\textit{sequentially}: only one database is active at any given time. This design, introduced
+after the initial runs revealed cross-database resource contention artefacts, gives each
+database exclusive access to the host's CPU, memory bandwidth, and I/O.
+
+\textbf{Nix flake}~\cite{nixos} provides a declarative, lock-file-pinned development
+environment. Running \texttt{nix~develop} drops into a shell with exactly-specified versions
+of Java~17, Maven, Python~3, and Docker tooling. Running \texttt{nix~run~.\#build} compiles
+all three Java benchmark clients in a single step. Every transitive build dependency is
+recorded in the flake lock file, eliminating the environment-variation failures that
+typically plague benchmark replications.
+
+\textbf{Python CLI} (\texttt{benchmark.py}) orchestrates the complete benchmark workflow
+programmatically. It starts the target container, writes the correct parameters to
+the Java client's \texttt{conf/config.properties}, invokes the Java client, polls
+\texttt{docker~stats} at one-second intervals to collect CPU and memory samples, and appends
+a structured result row to the output table after each test. A complete nine-test,
+three-database run at any scale reduces to:
+
+\begin{verbatim}
+  python3 benchmark.py --scale large
+\end{verbatim}
+
+This level of automation makes the results traceable to a specific, versioned execution
+environment. Any researcher with the repository and Docker available can reproduce the full
+dataset from scratch.
+
+\subsection{Metrics}
+\label{sec:metrics}
+
+Table~\ref{tab:metrics} describes the performance metrics collected for each run.
+
+\begin{table}[ht]
+  \centering
+  \caption{Performance metrics collected per benchmark run.}
+  \label{tab:metrics}
+  \begin{tabular}{ll}
+    \hline
+    \textbf{Metric} & \textbf{Source} \\
+    \hline
+    Throughput (pts/s)    & iot-benchmark Result Matrix \\
+    Average latency (ms)  & iot-benchmark Latency Matrix \\
+    P99 latency (ms)      & iot-benchmark Latency Matrix \\
+    Avg/Peak CPU (\%)     & \texttt{docker stats} (1\,s interval) \\
+    Avg/Peak Memory (MB)  & \texttt{docker stats} RSS \\
+    Wall-clock time (s)   & Run duration \\
+    \hline
+  \end{tabular}
+\end{table}
+
+For write tests, throughput measures data points ingested per second. For read tests,
+throughput sums point counts returned across all active query types. Because different query
+types return fundamentally different amounts of data per call --- a range query returns
+hundreds of points, a latest-point query returns exactly one --- \textit{latency} is used
+as the primary read comparison metric throughout Section~\ref{sec:experiments}.
+
+P99 latency captures tail behavior: 99\% of operations completed faster than this value.
+The gap between average and P99 reveals response-time consistency. A large gap signals
+occasional severe outliers that would produce visible jitter in live IoT monitoring applications,
+even when average latency appears acceptable.
+
+\subsection{Configuration Tuning}
+\label{sec:tuning}
+
+After completing the initial benchmark runs, two methodological improvements were applied
+before re-running all scales:
+
+\begin{enumerate}
+  \item \textbf{Sequential container lifecycle.} The original setup started all three
+  database containers simultaneously. Although each test ran on one database at a time, idle
+  containers competed for OS page cache and I/O bandwidth. TimescaleDB accumulated several
+  gigabytes of page cache during IoTDB's write sessions, producing deeply misleading memory
+  measurements. IoTDB's JVM pre-allocated its maximum heap during idle time for the same reason.
+  The corrected setup starts each container immediately before its tests and stops it
+  immediately after.
+
+  \item \textbf{Database-level tuning.} TimescaleDB received a pgtune~\cite{pgtune}
+  configuration for PostgreSQL~15 targeting this machine's hardware:
+  \texttt{shared\_buffers=8GB}, \texttt{work\_mem=27413kB},
+  \texttt{maintenance\_work\_mem=2GB}, \texttt{effective\_io\_concurrency=1000}, and
+  \texttt{checkpoint\_completion\_target=0.9}. These settings are the standard baseline for
+  any production PostgreSQL deployment on this class of hardware; the defaults are tuned
+  for minimal-RAM environments and produce artificially poor performance on capable machines.
+  InfluxDB's TSM write-cache ceiling was raised from the default 1\,GB to 8\,GB to match the
+  available RAM. A 28\,GB memory limit was applied to every container.
+\end{enumerate}
+
+Both the original and tuned results are reported and analyzed at small scale, where the
+contrast is most instructive. Medium and large-scale results use the tuned methodology
+throughout. The comparison between original and tuned runs serves a dual purpose: it
+quantifies the magnitude of contention artefacts and validates which performance
+characteristics are genuine architectural properties of each database.

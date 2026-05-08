@@ -1,3 +1,133 @@
 \section{Conclusion}
+\label{sec:conclusion}
 
-Do not write anything here yet
+\subsection{Summary of Findings}
+
+This work compared three time-series databases --- Apache IoTDB, InfluxDB, and TimescaleDB
+--- across nine IoT workload patterns at three data-volume scales, using a fully scripted
+and publicly reproducible benchmark infrastructure built on Docker Compose, Nix, and
+iot-benchmark~\cite{iotbenchmark}.
+
+Three main findings emerge from the study.
+
+\textbf{No single database dominates across all workloads.} IoTDB achieves 23.6\,M pts/s
+sequential write throughput at large scale --- 59$\times$ more than TimescaleDB --- but
+requires approximately 15\,GB of RAM and offers no relational join support.
+TimescaleDB's \texttt{time\_bucket()} downsampling query stays below 1\,ms across 100$\times$
+data growth, making it the strongest choice for dashboard analytics, while its WAL-based
+write path limits bulk-load throughput. InfluxDB occupies a practical middle ground:
+better write throughput than TimescaleDB and better memory efficiency than IoTDB, but
+weaker on threshold-alerting queries and latest-value lookups at scale.
+
+\textbf{Architectural choices determine scaling behavior, not tuning.}
+IoTDB's value-filter advantage grows with dataset size (5.2$\times$ latency increase for
+100$\times$ more data) because its chunk min/max statistics provide better block-level
+pruning as data density increases. InfluxDB's latest-point latency grows linearly with
+stored files because the TSM engine has no in-memory last-value shortcut. TimescaleDB's
+downsampling is genuinely constant-latency across scales because \texttt{time\_bucket()}
+queries scan a fixed time window, not the full dataset. These behaviors are architectural
+invariants that survive changes to hardware, configuration, or database version.
+
+\textbf{Methodology critically affects benchmark validity.}
+Two widely-stated conclusions from the initial runs were reversed by isolated, tuned reruns:
+TimescaleDB's 23\% out-of-order penalty at large scale was a page-cache eviction artefact
+(rerun: 2.7\%), and its reported 97.7\% CPU saturation was caused by shared-CPU competition
+(rerun: 77.4\%). The memory measurements changed by an order of magnitude when the shared
+container lifecycle was corrected. These reversals demonstrate that benchmark results from
+shared-resource environments require explicit validation through isolation reruns before
+they can be presented as architectural properties.
+
+\subsection{Final Comparison}
+
+Table~\ref{tab:final} provides a multi-dimensional comparison of the three databases
+across the dimensions most relevant to IoT deployment decisions. Ratings use a three-level
+scale: \textbf{H} (strong), \textbf{M} (moderate), \textbf{L} (weak).
+
+\begin{table*}[t]
+  \centering
+  \caption{Final comparison of Apache IoTDB, InfluxDB, and TimescaleDB across key dimensions
+           for IoT deployments. \textbf{H}~=~strong, \textbf{M}~=~moderate, \textbf{L}~=~weak.
+           Latency values are at small scale, tuned configuration.}
+  \label{tab:final}
+  \begin{tabular}{lcccl}
+    \hline
+    \textbf{Dimension} & \textbf{IoTDB} & \textbf{InfluxDB} & \textbf{TimescaleDB} & \textbf{Notes} \\
+    \hline
+    Sequential write throughput   & \textbf{H} & M & L & 2.2\,M / 397\,K / 174\,K pts/s (small) \\
+    Bulk-load throughput (B=1000) & \textbf{H} & H & M & 11.8\,M / 2.7\,M / 214\,K pts/s \\
+    Single-point write (B=1)      & \textbf{H} & M & L & 28\,K / 5\,K / 5\,K pts/s \\
+    Out-of-order tolerance (rel.) & M & L & \textbf{H} & $-$13\% / $-$36\% / $-$8\% penalty \\
+    Latest-value latency          & H & \textbf{L} & \textbf{H} & 1.24 / 9.24 / 0.38\,ms; InfluxDB scales poorly \\
+    Downsampling latency          & H & M & \textbf{H} & 1.81 / 5.71 / 0.61\,ms; TimescaleDB constant \\
+    Time-range export             & H & M & \textbf{H} & 1.19 / 5.41 / 0.54\,ms \\
+    Value-filter latency          & \textbf{H} & M & L & 3.72 / 71.09 / 23.98\,ms; IoTDB sublinear \\
+    Value-filter at large scale   & \textbf{H} & M & L & 19.4 / 496.8 / 510.0\,ms \\
+    Memory footprint (write)      & L & \textbf{H} & H & $\sim$3\,GB / $\sim$190\,MB / $\sim$239\,MB start \\
+    Memory footprint (steady)     & L & M & H & $\sim$10\,GB / 900\,MB / 1.8\,GB \\
+    SQL / relational support      & L & L & \textbf{H} & IoTDB SQL dialect; Flux only; full PostgreSQL \\
+    Ecosystem and tooling         & M & M & \textbf{H} & Growing; mature TS; full PG ecosystem \\
+    Durability guarantee (write)  & M & M & \textbf{H} & Async flush; async flush; synchronous WAL \\
+    IoT data model (native)       & \textbf{H} & M & M & Device/sensor hierarchy; tags+fields; relational \\
+    \hline
+  \end{tabular}
+\end{table*}
+
+The table supports a workload-based selection framework. For write-dominated IoT pipelines
+with sufficient RAM, IoTDB is the clear choice. For analytics-heavy workloads with dashboard
+queries over recent time windows, TimescaleDB's SQL compatibility and constant-latency
+\texttt{time\_bucket()} make it the strongest option. For threshold-alerting workloads that
+must query across growing historical datasets, IoTDB's sublinear value-filter scaling
+provides a structural long-term advantage. For mixed workloads with moderate write volumes
+and constrained memory, InfluxDB provides the most balanced profile.
+
+\subsection{Limitations}
+\label{sec:limitations}
+
+The following limitations bound the conclusions of this study:
+
+\textbf{Single-node deployment.} All databases ran on one host, eliminating real network
+latency. InfluxDB's HTTP line-protocol incurs meaningful round-trip overhead in distributed
+deployments that near-zero loopback latency does not capture.
+
+\textbf{Sequential read tests.} Read workloads run sequentially on the same dataset within
+a session. Later tests benefit from warmer OS page cache and in-memory database structures.
+Production-quality isolation would flush caches and restart the database between read tests.
+
+\textbf{IoTDB deferred durability.} IoTDB's write throughput reflects in-memory
+acknowledgement before disk persistence. Deployments with strict durability requirements
+would need to configure synchronous WAL mode, which may reduce throughput.
+
+\textbf{JVM warm-up.} IoTDB's read and single-point write performance improves significantly
+over the duration of a session as JIT compilation optimises hot paths. Short benchmarks
+understate steady-state throughput. The large-scale figures are the most representative of
+production IoTDB behavior.
+
+\subsection{Future Work}
+\label{sec:future-work}
+
+Several directions remain open for follow-on investigation:
+
+\begin{itemize}
+  \item \textbf{Distributed deployments.} Evaluating multi-node IoTDB clusters, InfluxDB
+  Clustered, and TimescaleDB with Citus extension would quantify how horizontal scaling
+  affects the write-vs-read trade-offs observed here and whether network overhead changes
+  the relative protocol costs.
+
+  \item \textbf{Real-world datasets.} Testing with large-scale industrial datasets ---
+  vehicle telemetry, power-grid sensor data, or manufacturing process monitoring at
+  billion-point scale --- would validate whether IoTDB's sublinear value-filter scaling
+  continues to hold and reveal new patterns not visible in the synthetic workloads used here.
+
+  \item \textbf{Durability and high-availability overhead.} Measuring the throughput and
+  latency cost of replication, failover, and crash-recovery scenarios would be essential
+  for any production deployment decision. IoTDB's asynchronous write path makes this
+  particularly important.
+
+  \item \textbf{Version evolution.} All three databases release updates frequently. IoTDB~2.x,
+  InfluxDB~3.0 (with its new columnar storage engine based on Apache Arrow and DataFusion),
+  and TimescaleDB~2.x introduce architectural changes that could materially alter the
+  trade-offs described in this study.
+\end{itemize}
+
+The benchmark scripts, Docker configurations, and data files produced by this study are
+publicly available to facilitate replication and extension by future researchers.

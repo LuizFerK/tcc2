@@ -1,3 +1,162 @@
 \section{Related Works}
+\label{sec:related}
 
-Do not write anything here yet
+For the elaboration of this study, comparative works on time series databases were reviewed,
+covering both functionality analyses and performance benchmarks. The search was conducted
+using keywords such as ``data streaming'', ``timeseries'', and ``timeseries databases'',
+with results ordered by citation count to prioritize more established and developed analyses.
+From this search, 23 results were selected for initial reading to verify their relevance to
+the objectives of this study.
+
+Among the 23 works, some did not present sufficient direct relation for an in-depth analysis,
+though they provided relevant context. \cite{zubaroglu2021data}, for example, presents a list
+of datasets applicable to time series database analyses. \cite{Gaber2005Mining} contributed
+relevant information about the algorithms underlying TSDB implementations, despite not being
+directly focused on comparative evaluation.
+
+From the initial reading, six works were selected for detailed study. This chapter is organized
+in three sections. The \textit{Functionality Analysis} section covers works that evaluate
+technical and operational characteristics of TSDB systems. The \textit{Performance Analysis}
+section covers comparative benchmark studies. The \textit{Comparative Analysis} section
+synthesizes and critiques all selected works through a comparative table, highlighting patterns,
+gaps, and trends identified in the literature.
+
+\subsection{Functionality Analysis}
+
+\cite{Petre2019} present a maturity-model analysis of six open-source time series databases:
+InfluxDB, Graphite, RRDTool, Prometheus, OpenTSDB, and TimescaleDB. The work evaluates 18
+quantitative and qualitative attributes divided into functional requirements (apparent to the
+end user, such as specific capabilities) and non-functional requirements (not directly
+apparent but impactful, such as compression strategies and query optimization mechanisms).
+Evaluated attributes include active development, development velocity, market maturity, data
+replication, and library support. The objective is to assist in the selection of the most
+adequate TSDB for business needs, considering both technical and operational aspects. The
+result identified InfluxDB as the leading solution in the analysis.
+
+\subsection{Performance Analysis}
+
+Five works in the format of controlled benchmarks or real-scenario comparisons were selected
+for detailed analysis.
+
+\cite{lima2024avaliando} employed insertion tests (ranging from 1{,}000 to 5 million records)
+and aggregate queries with synthetic data (timestamp, location, temperature, and humidity
+measurements) to compare DBMS performance using Apache JMeter. The same data structure was
+replicated across all databases. Tests were carried out in a Docker-based environment on a
+machine with AMD Ryzen 5 4500 (6 cores), 16\,GB RAM, and SSD storage, testing at volumes of
+500{,}000 and 5 million records. Reproducibility was partial, as Docker containers were used
+but with incomplete details for full replication. InfluxDB was the standout performer in
+the study.
+
+\cite{shah2022performance} compared the performance of InfluxDB~v2.1, TimescaleDB~v2.6,
+Druid~v0.22.1, and Cassandra~v3.11.12 in insertion operations and eight query types (point
+queries, aggregations, and others), evaluating load time, space consumption, and latency.
+Both real datasets (IoT data, financial data, NYC Taxi) and synthetic datasets (generated via
+a Python time-series generator) were used. The test environment consisted of an Intel Core
+i5-9500 (6 cores), 8\,GB RAM, 500\,GB SSD, and Ubuntu~20.04. InfluxDB stood out not only
+in query performance but also in space consumption, ranking second only to Druid. The study
+was classified as non-reproducible, as no scripts or configurations were shared.
+
+\cite{naqvi2017influxdb} compared InfluxDB, SQL Server, Cassandra, Elasticsearch, and OpenTSDB
+on three primary metrics: data ingestion rate, storage requirements, and average query response
+time. Both synthetic data (simulating server metrics) and a real dataset of NYC taxi trips
+(2009--2017) were used, processed with native DBMS tools and custom Java scripts. Tests were
+performed on an Intel Core i5-6300HQ (4 cores), 16\,GB RAM, and SSD, using specific versions
+of each database (InfluxDB~1.3, Elasticsearch~5.6.3). The study concluded that InfluxDB is
+ideal for high-velocity temporal data ingestion scenarios such as IoT and monitoring, but may
+not be adequate for applications requiring complex JOIN operations or frequent updates.
+Reproducibility was classified as non-existent, with no scripts or configurations shared.
+
+\cite{pereira2023mulletbench} evaluated the performance of InfluxDB~2.7 and Apache IoTDB~1.1.1
+in three scenarios: cloud-only, 2~edge~+~cloud, and 4~edge~+~cloud, testing insertion,
+query, and mixed workloads, each executed three times after a system reboot. The tools used
+included MulletBench for the benchmark, Ansible and Docker for orchestration, PCP for
+monitoring, and tcconfig for network simulation. Tests were conducted on server nodes with
+Intel~i5-9500 (16\,GB RAM, NVMe SSD) and client nodes with Intel~i3-4170 (16\,GB RAM,
+SATA SSD) over a Gigabit switched network. This is the only work in the reviewed literature
+classified as fully reproducible, with all configurations and code publicly available on GitHub.
+Apache IoTDB was the standout performer, outperforming InfluxDB across all tested scenarios.
+
+\cite{wang2023iotdb} compared IoTDB~v0.13.0 against InfluxDB, TimescaleDB, KairosDB, Parquet,
+and ORC in write and read operations, storage cost, and query types including range queries,
+aggregations, and downsampling, measuring throughput, latency, and response time.
+Both real industrial datasets (vehicle, train, and machine data) and synthetic datasets
+generated by TSBS were used. Tests were conducted in standalone (Intel i7-10700, 32\,GB RAM,
+10\,TB HDD) and distributed (Alibaba Cloud with Xeon Platinum, 256\,GB RAM) environments,
+with a replication factor of 3 and temporal partitioning in the distributed setup. While
+configuration details are described in the paper, no complete reproduction guide was provided,
+leading to a partial reproducibility classification. Apache IoTDB demonstrated superiority
+in both local and distributed environments, especially at large industrial scales involving
+trillions of data points.
+
+\subsection{Comparative Analysis}
+
+Table~\ref{tab:related} aggregates the key attributes of the five performance studies, enabling
+a comparative analysis across dimensions most relevant to benchmark methodology.
+
+\begin{table*}[t]
+  \centering
+  \caption{Comparison of related TSDB benchmark studies.}
+  \label{tab:related}
+  \begin{tabular}{lllllll}
+    \hline
+    \textbf{Author} & \textbf{Year} & \textbf{Databases} & \textbf{Reprod.} & \textbf{Datasets} & \textbf{Tools} & \textbf{Leader} \\
+    \hline
+    \cite{lima2024avaliando}       & 2024 & SQL + NoSQL & Partial & Synthetic          & Apache JMeter                 & InfluxDB \\
+    \cite{pereira2023mulletbench}  & 2023 & NoSQL       & Full    & Synthetic          & MulletBench, Ansible, Docker  & IoTDB    \\
+    \cite{wang2023iotdb}           & 2023 & SQL + NoSQL & Partial & Real + Synthetic   & TSBS                          & IoTDB    \\
+    \cite{shah2022performance}     & 2022 & SQL + NoSQL & None    & Real + Synthetic   & timeseries-generator (Python) & InfluxDB \\
+    \cite{naqvi2017influxdb}       & 2017 & SQL + NoSQL & None    & Real + Synthetic   & Telegraf, Kapacitor            & InfluxDB \\
+    \hline
+  \end{tabular}
+\end{table*}
+
+The publication years span from 2017 to 2024. The majority of studies are recent, with
+particular density in 2023, reflecting growing interest in TSDB evaluation. The presence of
+studies from 2017 highlights that this is not a newly emerging concern, yet the rapid evolution
+of the databases themselves means that older findings may no longer apply to current versions.
+
+\textbf{Database coverage.} InfluxDB is present in every reviewed study, serving as the de
+facto reference point for TSDB comparisons --- even in works where another system is the
+primary subject, as in~\cite{wang2023iotdb}. The presence of TimescaleDB in three of five
+studies reflects its growing relevance as a SQL-compatible alternative. The most notable
+trend is the emergence of Apache IoTDB: appearing only in the two most recent studies
+(2023), it leads both of them~\cite{pereira2023mulletbench,wang2023iotdb}, suggesting
+either significant performance improvements in recent versions or a growing recognition of
+its strengths for IoT-oriented workloads.
+
+\textbf{Reproducibility.} This is the most significant methodological gap in the reviewed
+literature. Of five performance studies, only one --- \cite{pereira2023mulletbench} ---
+is fully reproducible, with all code and configurations publicly available on GitHub.
+Two studies (\cite{lima2024avaliando} and \cite{wang2023iotdb}) offer partial reproducibility
+through Docker containers or described configurations, while the remaining two
+(\cite{shah2022performance} and \cite{naqvi2017influxdb}) provide no means of replication.
+This limits independent validation of results and makes it difficult to attribute performance
+differences to database architecture rather than experimental conditions.
+
+\textbf{Datasets.} All five studies use synthetic datasets, reflecting the need for
+controlled, volume-scalable data. Three studies additionally include real datasets such as
+NYC Taxi data, IoT sensor readings, and industrial vehicle data~\cite{shah2022performance,
+naqvi2017influxdb,wang2023iotdb}, providing practical relevance alongside experimental
+control. The TSBS (Time Series Benchmark Suite) appears in the most recent studies,
+suggesting a potential standardization trend in the community.
+
+\textbf{Hardware configurations.} Tested environments vary considerably: processors range
+from Intel~i3 to Intel~i7, RAM from 8\,GB to 32\,GB (plus cloud with 256\,GB in one
+case~\cite{wang2023iotdb}), and storage from SATA SSD to NVMe and HDD. The majority of
+tests used mid-range machines, consistent with a focus on realistic deployment scenarios.
+The inclusion of cloud testing in more recent studies~\cite{pereira2023mulletbench,wang2023iotdb}
+reflects growing interest in edge-to-cloud architectures.
+
+\textbf{Outcome trends.} InfluxDB leads in three of five studies, all from 2017--2022.
+Apache IoTDB leads in both 2023 studies. This temporal pattern is notable: it may indicate
+performance improvements in IoTDB's recent versions, or it may reflect the fact that
+more recent benchmarks include IoT-specific workloads where IoTDB's native data model
+provides a structural advantage. The shift does not necessarily invalidate InfluxDB for
+other workloads; it does, however, motivate the inclusion of both databases in any
+contemporary comparative evaluation.
+
+In summary, the reviewed literature reveals three key gaps that the present work addresses:
+(1) insufficient reproducibility --- only one of five studies is fully replicable; (2) limited
+coverage of IoTDB alongside InfluxDB and TimescaleDB in the same controlled benchmark; and
+(3) the absence of a systematic analysis of how methodology choices (resource isolation,
+database tuning) affect reported conclusions. This study contributes to closing all three gaps.
