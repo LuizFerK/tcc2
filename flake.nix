@@ -15,6 +15,31 @@
       forEachSystem = nixpkgs.lib.genAttrs supportedSystems;
     in
     {
+      apps = forEachSystem (
+        system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+          texlive = pkgs.texlive.combined.scheme-full;
+          script = pkgs.writeShellScriptBin "build-thesis" ''
+            set -e
+            origdir=$(pwd)
+            tmpdir=$(mktemp -d)
+            trap "rm -rf $tmpdir" EXIT
+            cp -r "$origdir/tcc2-latex/." "$tmpdir/"
+            cd "$tmpdir"
+            HOME=$(mktemp -d) ${texlive}/bin/latexmk -pdf -bibtex -interaction=nonstopmode main-en.tex
+            cp main-en.pdf "$origdir/thesis.pdf"
+            echo "[thesis] PDF written to $origdir/thesis.pdf"
+          '';
+        in
+        {
+          thesis = {
+            type = "app";
+            program = "${script}/bin/build-thesis";
+          };
+        }
+      );
+
       devShells = forEachSystem (
         system:
         let
@@ -65,6 +90,8 @@
               echo "  python3 charts.py                          all sources, en-us"
               echo "  python3 charts.py --source medium          single source"
               echo "  python3 charts.py --language pt-br         portuguese labels"
+              echo "-----------------------------------------------------------------------"
+              echo "  nix run .#thesis                           compile thesis"
               echo "======================================================================="
             '';
           };
