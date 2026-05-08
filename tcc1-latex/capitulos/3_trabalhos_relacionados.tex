@@ -1,0 +1,118 @@
+\chapter{Trabalhos Relacionados}
+
+Para a elaboração deste estudo, foram revisados e analisados trabalhos de benchmarks e comparações, tanto de performance quanto de funcionalidades, de bancos de dados de séries temporais. A busca por trabalhos relacionados foi realizada utilizando as palavras-chave "data streaming", "timeseries" e "timeseries databases". Os resultados foram ordenados por quantidade de citações por trabalho, o que possibilitou uma seleção de análises mais elaboradas e desenvolvidas. Após a ordenação, selecionaram-se 23 resultados para leitura inicial, a fim de verificar a relevância para os objetivos deste estudo.
+
+Dentre os 23 trabalhos, alguns não apresentaram relação direta suficiente para uma análise aprofundada, embora tenham fornecido informações relevantes para a construção deste estudo. \citeonline{zubaroglu2021data}, por exemplo, apresenta uma lista de datasets para serem utilizados em análises de bancos de dados de séries temporais. \citeonline{Gaber2005Mining} também foi outro trabalho que, apesar de não ter relação direta com o objetivo desta análise, trouxe muitas informações relevantes sobre os algoritmos usados pelos SGBDs de séries temporais apresentados.
+
+Da primeira etapa de revisão, seis trabalhos dos vinte e três foram selecionados para um estudo detalhado. As informações deste capítulo referem-se a esses seis estudos.
+
+Este capítulo está organizado em três seções principais. A seção de \textit{Análise de funcionalidades} agrega trabalhos que avaliam características técnicas e operacionais dos sistemas. A seção de \textit{Análise de performance} reúne estudos comparativos baseados em benchmarks e métricas de desempenho. Por fim, a \textit{Análise comparativa} sintetiza e critica os trabalhos selecionados por meio de uma tabela comparativa desenvolvida para este estudo, destacando padrões, lacunas e tendências identificadas na literatura.
+
+\section{Análise de funcionalidades}
+
+\citeonline{Petre2019} apresenta a relação dos bancos de dados com as funcionalidades apresentadas por cada um. Requisitos funcionais, que são aparentes ao usuário final, como uma funcionalidade específica, e requisitos não funcionais, como estratégias de compressão ou otimização de pesquisas, que não são aparentes ao usuário, mas que impactam diretamente na usabilidade.
+
+O trabalho compara seis bancos de dados de séries temporais (TSDBs) de código aberto: InfluxDB, Graphite, RRDTool, Prometheus, OpenTSDB e TimescaleDB. O estudo avalia 18 atributos quantitativos e qualitativos, como desenvolvimento ativo, velocidade de desenvolvimento, maturidade de mercado, replicação de dados e suporte a bibliotecas, para classificar as soluções. O objetivo é auxiliar na seleção da TSDB mais adequada para as necessidades empresariais, considerando aspectos técnicos e operacionais. O resultado destacou o InfluxDB como a solução líder na análise.
+
+\section{Análise de performance}
+
+Para a próxima etapa da análise, foram selecionados 5 trabalhos no formato de benchmark ou, pelo menos, com comparações de desempenho em cenários reais e/ou sintéticos.
+
+\citeonline{lima2024avaliando} utilizou testes de inserção (1.000 a 5 milhões de registros) e consultas agregadas com dados fictícios (medições de timestamp, local, temperatura e umidade) para comparar o desempenho entre SGBDs, executados via Apache JMeter. A mesma estrutura de dados foi replicada em todos os bancos, testando volumes de 500.000 e 5 milhões de registros. O ambiente empregou containers Docker para os SGBDs e JMeter, porém sem detalhes completos para reprodução. Os testes foram realizados em uma máquina com AMD Ryzen 5 4500, 16GB RAM e SSD, utilizando containers Docker locais. O InfluxDB foi o banco de dados que mais se destacou na pesquisa.
+
+\citeonline{shah2022performance} comparou o desempenho de InfluxDB v2.1, TimescaleDB v2.6, Druid v0.22.1 e Cassandra v3.11.12 em operações de inserção e oito tipos de consultas (pontuais, agregações, etc.), avaliando tempo de carga, consumo de espaço e latência. Foram utilizados datasets reais (IoT, financeiro e NYC Taxi) e sintéticos (gerados via timeseries-generator em Python), sem menção a ferramentas externas como JMeter. O ambiente de testes consistiu em um Intel Core i5-9500 (6 núcleos), 8GB RAM, SSD 500GB e Ubuntu 20.04, com configurações de ambiente detalhadas. O banco de dados que mais se destacou foi o InfluxDB, não apenas em performance de consultas, mas também se saiu bem em consumo de espaço, ficando atrás apenas do Druid.
+
+\citeonline{naqvi2017influxdb} comparou o desempenho do InfluxDB, SQL Server, Cassandra, Elasticsearch e OpenTSDB em três métricas principais: taxa de ingestão de dados, requisitos de armazenamento e tempo médio de resposta a consultas. Foram utilizados dados sintéticos (simulando métricas de servidores) e um dataset real de viagens de táxi de NYC (2009-2017), processados com ferramentas nativas dos SGBDs e scripts personalizados em Java. Os testes foram realizados em um ambiente com Intel Core i5-6300HQ (4 núcleos), 16GB RAM e SSD, em sistemas Windows 10 e Ubuntu 20.04, utilizando versões específicas dos bancos (como InfluxDB 1.3 e Elasticsearch 5.6.3). O estudo conclui que o InfluxDB é ideal para cenários de alta ingestão de dados temporais, como IoT e monitoramento, mas pode não ser adequado para aplicações que exigem operações complexas de JOIN ou atualizações frequentes.
+
+\citeonline{pereira2023mulletbench} avaliou o desempenho de InfluxDB 2.7 e Apache IoTDB 1.1.1 em três cenários distintos (Cloud-only, 2 Edge + Cloud e 4 Edge + Cloud), testando cargas de inserção, consulta e mista, com cada teste executado 3 vezes após reinicialização. As ferramentas utilizadas incluíram o MulletBench para benchmark, Ansible + Docker para orquestração, PCP para monitoramento e tcconfig para simulação de rede. Os testes foram realizados em nós com Intel i5-9500 (16GB RAM, NVMe SSD) e clientes com Intel i3-4170 (16GB RAM, SATA SSD), em rede Gigabit comutada. As configurações detalhadas e o código estão disponíveis no GitHub do MulletBench e no Apêndice A. O Apache IoTDB se destacou na pesquisa.
+
+\citeonline{wang2023iotdb} comparou o desempenho do IoTDB v0.13.0 com outros sistemas (InfluxDB, TimescaleDB, KairosDB, Parquet e ORC) em operações de escrita, leitura, custo de armazenamento e consultas (range, agregação, downsampling), medindo throughput, latência e tempo de resposta. Foram utilizados datasets industriais reais (dados de veículos, trens e máquinas) e sintéticos (gerados pelo TSBS), sem ferramentas externas além do TSBS. Os testes foram realizados em ambientes stand-alone (Intel i7-10700, 32GB RAM, 10TB HDD) e distribuídos (Alibaba Cloud com Xeon Platinum, 256GB RAM), com configurações específicas como replicação fator 3 e particionamento temporal. Detalhes das configurações estão no texto, mas não há um guia completo de reprodução. Na análise do trabalho, o Apache IoTDB demonstrou superioridade tanto em ambientes locais quanto distribuídos, especialmente em larga escala, como em aplicações industriais com trilhões de pontos de dados.
+
+\section{Análise comparativa}
+
+Após análise minuciosa, foi desenvolvida a Tabela \ref{tab:comparacoes}  para agregar informações úteis e possibilitar análises comparativas entre os trabalhos que possuem análise de performance, ou seja, cinco dos seis trabalhos selecionados.
+
+A tabela possui seis colunas, são elas: Autor, Ano, Bancos de Dados, Reprodutibilidade, Datasets e Ferramentas de Teste. Os dados foram ordenados pelo ano, do mais recente ao mais antigo.
+
+A coluna "Bancos de Dados" indica qual tipo de TSBD o estudo analisa: SQL (Relacional) e/ou NoSQL (Não relacionado).
+
+A coluna "Reprodutibilidade" indica se o estudo fornece recursos para reproduzir os experimentos, como scripts, containers Docker ou links para repositórios: Sim (é reprodutível), Parcial (parcialmente reprodutível, ou seja, há informações presentes para se reproduzir os experimentos, mas não de maneira completa) ou Não (Não é reprodutível).
+
+A coluna "Datasets" mostra os tipos de dados utilizados nos testes. Podem ser sintéticos (gerados artificialmente, como TSBS ou medições fictícias) ou reais (ex: dados de táxis de NYC ou veículos).
+
+A coluna "Ferramentas de Teste" lista as ferramentas empregadas para avaliar desempenho, como Apache JMeter, scripts Python, TSBS ou soluções personalizadas (ex: MulletBench). 
+
+% https://www.tablesgenerator.com/
+\begin{table}[]
+\scriptsize
+\center
+\caption{Comparações de benchmarks}
+\label{tab:comparacoes}
+\begin{tabular}{@{}lrllllll@{}}
+\toprule
+Autor &
+  \multicolumn{1}{l}{Ano} &
+  Bancos de Dados &
+  Reprodutibilidade &
+  Datasets &
+  Ferramentas de Teste \\ \midrule
+Lima et al. (2024) &
+  2024 &
+  SQL e NoSQL &
+  Parcial &
+  Sintético &
+  Apache JMeter \\
+\citeonline{pereira2023mulletbench} &
+  2023 &
+  NoSQL &
+  Sim &
+  Sintético &
+  MulletBench, Ansible, Docker \\
+\citeonline{wang2023iotdb} &
+  2023 &
+  SQL e NoSQL &
+  Parcial &
+  Real e Sintético &
+  TSBS \\
+Shahet al. (2022) &
+  2022 &
+  SQL e NoSQL &
+  Não &
+  Real e Sintético &
+  timeseries-generator (Python) \\
+Naqvi et al. (2017) &
+  2018 &
+  SQL e NoSQL &
+  Não &
+  Real e Sintético &
+  Telegraf, Kapacitor \\ \bottomrule
+\end{tabular}
+\end{table}
+
+A coluna "Ano" indica o ano de publicação dos trabalhos, variando entre 2018 e 2024. Observa-se que a maioria dos estudos é recente, com destaque para 2023, o que sugere um crescente interesse na avaliação de bancos de dados temporais. A ausência de publicações muito antigas reflete a evolução acelerada dessa área, com novas ferramentas e benchmarks surgindo nos últimos anos, apesar de que séries temporais seja um tópico de estudo antigo.
+
+Na coluna de "Bancos de Dados", \citeonline{lima2024avaliando} utiliza PostgreSQL, InfluxDB, TimeScaleDB, ou seja, bancos de dados SQL e NoSQL; \citeonline{shah2022performance} utiliza InfluxDB, TimescaleDB, Druid, Cassandra, havendo também bancos SQL e NoSQL; \citeonline{naqvi2017influxdb} teve a maior quantidade de bancos de dados analisados: InfluxDB, SQL Server, Cassandra, Elasticsearch, OpenTSDB; \citeonline{pereira2023mulletbench} analisa apenas InfluxDB e Apache IoTDB, ou seja, apenas bancos de dados NoSQL; \citeonline{wang2023iotdb} com IoTDB, InfluxDB, TimescaleDB, contendo SQL e NoSQL em seu trabalho.
+
+É notável a forte predominância do InfluxDB, presente em todas as pesquisas. Outros bancos de dados, como TimescaleDB, Apache IoTDB, Cassandra e PostgreSQL também aparecem, mas em menor frequência. Essa repetição do InfluxDB como ponto comum entre os trabalhos indica sua relevância como referência para comparações, enquanto a inclusão de bancos como IoTDB em estudos mais recentes (2023) sugere uma tendência emergente.
+
+Na coluna de "Reprodutibilidade" apenas o trabalho \citeonline{pereira2023mulletbench} é classificado como totalmente reprodutível, com código disponível no GitHub. \citeonline{lima2024avaliando} e \citeonline{wang2023iotdb} possuem menção a containers Docker e configurações descritas, respectivamente, caracterizando reprodutibilidade parcial, enquanto os demais trabalhos não são reproduzíveis. Isso revela uma lacuna comum em pesquisas da área, onde a falta de padronização ou compartilhamento de metodologias pode dificultar a validação independente dos resultados.
+
+Todos os cinco trabalhos utilizam datasets sintéticos em suas comparações. Medições fictícias de temperatura/umidade em \citeonline{lima2024avaliando} e métricas de servidores em \citeonline{naqvi2017influxdb} são bons exemplos, auxiliando o volume de dados nesses benchmarks.
+
+\citeonline{shah2022performance}, \citeonline{naqvi2017influxdb} e \citeonline{wang2023iotdb} também analisam datasets reais, como dados de IoT, táxis de NYC, veículos e trens, demonstrando a diversidade de casos de usos desses sistemas e, consequentemente, a diversidade das análises de benchmarks.
+
+A combinação de ambos é frequente, sugerindo que os autores buscam equilibrar controle (dados sintéticos) e validade prática (dados reais). O uso do TSBS em estudos recentes (2023) aponta para uma possível padronização em benchmarks.
+
+A diversidade da coluna "Ferramentas de Teste" é maior, com cada estudo adotando abordagens distintas, mas ferramentas nativas dos SGBDs e geradores de dados sintéticos (como timeseries-generator) são recorrentes.
+
+\citeonline{lima2024avaliando} utilizou uma máquina com AMD Ryzen 5 4500 (3.6GHz, 6 núcleos), 16GB RAM, SSD 512GB. \citeonline{shah2022performance} utilizou um Intel Core i5-9500 (6 núcleos @3.00GHz), 8GB RAM, SSD 500GB. \citeonline{naqvi2017influxdb} fez as análises em um Dell Inspiron 7559 (Intel i5-6300HQ, 16GB RAM, SSD). \citeonline{pereira2023mulletbench} fez testes locais e em núvem, com máquina com Intel i5-9500 (16GB RAM, NVMe SSD) e Intel i3-4170. Já \citeonline{wang2023iotdb}, por fim, também com configuração stand-alone e em cloud, com um Intel i7-10700 (32GB RAM, 10TB HDD) e, para cloud, Alibaba Cloud (256GB RAM).
+
+As configurações de hardware utilizadas nos experimentos foram variadas, com processadores como Intel i5, i7 e AMD Ryzen, além de variações em memória RAM (8GB a 32GB) e armazenamento (SSD, NVMe, HDD). Nota-se que, embora haja diferenças específicas, a maioria dos testes foi realizada em máquinas de médio porte, sem infraestrutura extremamente robusta, o que pode indicar um foco em cenários realistas de implantação.
+
+InfluxDB é o TSDB líder em três trabalhos (\citeonline{lima2024avaliando}, \citeonline{shah2022performance} e \citeonline{naqvi2017influxdb}), destacando-se pelo melhor desempenho no estudo, enquanto o Apache IoTDB assume a dianteira nos dois mais recentes (\citeonline{pereira2023mulletbench} e \citeonline{wang2023iotdb}), possivelmente refletindo avanços ou otimizações específicas nessa tecnologia.
+
+Uma semelhança marcante entre os estudos é a centralidade do InfluxDB como ponto de comparação, aparecendo em todas as pesquisas, exceto uma. Isso sugere que ele se tornou um padrão para avaliações de bancos temporais, mesmo quando outros sistemas são o foco principal (como IoTDB em \citeonline{wang2023iotdb}). No entanto, a ascensão do Apache IoTDB como líder em dois trabalhos de 2023 pode indicar uma mudança no cenário competitivo, possivelmente impulsionada por melhorias em escalabilidade ou eficiência.
+
+Outro padrão é o uso misto de dados sintéticos e reais, com ênfase no TSBS (Time Series Benchmark Suite) como ferramenta de geração de dados em estudos recentes. Isso reflete uma tentativa de balancear reprodutibilidade (via dados controlados) e relevância prática (com datasets do mundo real). Porém, a reprodutibilidade dos experimentos ainda é um desafio: apenas um estudo disponibilizou código completo, enquanto outros oferecem descrições parciais ou nenhum recurso para replicação. Essa falta pode limitar a confiabilidade comparativa dos resultados.
+
+Por fim, as configurações de hardware variam, mas sem extremos (como clusters massivos), o que pode ser proposital para refletir ambientes de implantação típicos. A escolha de máquinas com recursos moderados (ex: 16GB RAM, SSDs) reforça que os testes visam cenários acessíveis, embora estudos como \citeonline{wang2023iotdb} (com 32GB RAM e cloud) explorem casos mais demandantes. Essa diferença ressalta a importância de contextualizar benchmarks conforme o uso pretendido.

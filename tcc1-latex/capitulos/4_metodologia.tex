@@ -1,0 +1,93 @@
+\chapter{Metodologia}
+
+A construção deste trabalho envolve múltiplas etapas metodológicas, combinando análise da literatura, análise de benchmarks e execução prática de experimentos controlados com bancos de dados de séries temporais.
+
+Inicialmente, foram realizadas buscas no Google Scholar utilizando as palavras-chave \textit{"data streaming"}, \textit{"timeseries"} e \textit{"timeseries databases"}. A seleção dos trabalhos considerou a quantidade de citações e a relevância em relação ao objetivo deste estudo. Cada trabalho identificado foi lido e avaliado com uma nota de 0 a 10, de acordo com sua pertinência para a análise de bancos de dados de séries temporais. Trabalhos com foco direto em benchmarks e comparações técnicas receberam maior prioridade.
+
+Com os trabalhos selecionados, foi elaborada uma tabela comparativa contendo aspectos como bancos de dados avaliados, datasets utilizados (reais ou sintéticos), ferramentas de benchmark empregadas, reprodutibilidade do ambiente e resultados obtidos. Essa análise permitiu identificar padrões metodológicos, lacunas na literatura e quais bancos de dados demonstraram maior destaque em diferentes cenários experimentais.
+
+Na próxima etapa, será realizada uma revisão crítica dos benchmarks existentes, com foco na adequação das metodologias utilizadas e nas métricas avaliadas. As ferramentas utilizadas para execução e análise de benchmarks não serão previamente selecionadas, sendo assim, será escolhida aquela que melhor se adequar ao uso e que possua melhor compatibilidade para facilitar uma análise crítica e justa de todos os TSDBs. Serão analisadas tanto ferramentas padronizadas, como o \textit{TSBS} e o \textit{Apache JMeter}, quanto soluções customizadas empregadas em trabalhos recentes. Essa revisão buscará evidenciar quais benchmarks oferecem maior reprodutibilidade, cobertura funcional e representatividade de cargas reais de trabalho.
+
+Com base nessa análise crítica, será elaborado um ambiente de testes declarativo, modular e reproduzível, utilizando ferramentas de automação como Docker, Ansible, Nix e GitHub Actions. A infraestrutura terá como objetivo possibilitar a replicação dos testes em diferentes contextos, com configuração detalhada dos parâmetros de cada SGBD testado, possibilitando variações controladas de volume, frequência e distribuição dos dados.
+
+Para garantir robustez nos testes, será gerado um conjunto de dados sintéticos com diferentes padrões de carga, utilizando ferramentas como \textit{TSBS} (\textit{Time Series Benchmark Suite}), ou semelhantes, e scripts personalizados. Assim como as ferramentas de benchmark, as ferramentas de geração de  dados sintéticos não serão previamente definidas, com o objetivo de tornar a escolha o mais adequada possível diante das necessidades de testes. Esses dados permitirão simular cenários como séries contínuas, explosões de ingestão, sazonalidade e séries com campos variados (inteiros, ponto flutuante e texto), isolando variáveis críticas para a análise de desempenho.
+
+Complementando os dados sintéticos, serão selecionados datasets reais amplamente utilizados na literatura, como o \textit{NYC Taxi Trip Data}, dados de sensores IoT e medições meteorológicas. Os conjuntos de dados utilizados serão definidos durante a execução dos testes para que sejam atualizados, com alto volume e compatíveis com todos os TSDBs analisados. Esses dados proporcionarão uma avaliação mais fiel da aplicabilidade dos TSDBs em ambientes produtivos. A diversidade de fontes permitirá verificar o comportamento dos sistemas em diferentes tipos de domínio e estrutura temporal.
+
+Serão conduzidos testes controlados de inserção e leitura sobre os dados reais e sintéticos, com coleta de métricas como \textit{throughput} de escrita, latência de consulta, consumo de memória, espaço em disco e uso de CPU. Os testes serão executados em ambientes locais ou na nuvem, utilizando configurações equivalentes às encontradas na literatura, buscando validar os resultados anteriores e gerar novas evidências quantitativas.
+
+A partir dos TSDBs que apresentarem melhor desempenho nos testes empíricos, será conduzida uma análise qualitativa das funcionalidades oferecidas por cada sistema. Serão avaliadas características como consultas agregadas, compressão temporal, particionamento automático, integração com outras ferramentas e suporte a análises em tempo real, conforme documentação e experimentação prática.
+
+Além das funcionalidades, será examinada a qualidade da documentação técnica, frequência de atualizações, manutenção ativa, base de usuários e disponibilidade de suporte comunitário ou profissional. Esses aspectos serão avaliados com base em repositórios públicos, fóruns, número de colaboradores e frequência de commits, de modo a identificar a viabilidade de uso em ambientes corporativos e acadêmicos.
+
+Por fim, será elaborada uma tabela comparativa entre os principais TSDBs avaliados, ordenando-os de acordo com seu desempenho geral nas análises quantitativas e qualitativas. A tabela sintetizará as conclusões do estudo, indicando os pontos fortes e fracos de cada sistema, e oferecendo uma visão estruturada para auxiliar na escolha do TSDB mais adequado conforme o perfil da aplicação.
+
+Deste modo, um cronograma foi elaborado para mapear as atividades necessárias. Organizadas em quinzenas, as atividades já realizadas durante a elaboração deste trabalho e as atividades que ainda serão necessárias para a finalização do estudo estão descritas.
+
+\begin{landscape}
+\section{Cronograma}
+\noindent
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{|>{\raggedright\arraybackslash}p{10cm}|*{24}{>{\centering\arraybackslash}p{0.8cm}|}}
+\hline
+\textbf{Atividades}& 
+\textbf{Q1} & 
+\textbf{Q2} & 
+\textbf{Q3} & 
+\textbf{Q4} & 
+\textbf{Q5} & 
+\textbf{Q6} & 
+\textbf{Q7} & 
+\textbf{Q8} & 
+\textbf{Q9} & 
+\textbf{Q10} & 
+\textbf{Q11} & 
+\textbf{Q12} & 
+\textbf{Q13} & 
+\textbf{Q14} & 
+\textbf{Q15} & 
+\textbf{Q16} & 
+\textbf{Q17} & 
+\textbf{Q18} & 
+\textbf{Q19} & 
+\textbf{Q20} & 
+\textbf{Q21} & 
+\textbf{Q22} & 
+\textbf{Q23} & 
+\textbf{Q24} \\
+\hline
+Discussão sobre tema e desafios&X&&&&&&&&&&&&&&&&&&&&&&& \\
+\hline
+Busca de trabalhos relacionados no Google Scholar&&X&X&&&&&&&&&&&&&&&&&&&&& \\
+\hline
+Análise de trabalhos relacionados&&&&X&X&X&&&&&&&&&&&&&&&&&&\\
+\hline
+Desenvolvimento do capítulo de trabalhos relacionados&&&&&&&X&X&&&&&&&&&&&&&&&&\\
+\hline
+Desenvolvimento do caítulo de referencial teórico&&&&&&&&&X&X&&&&&&&&&&&&&&\\
+\hline
+Desenvolvimento do caítulo de metodologia&&&&&&&&&&&X&X&&&&&&&&&&&&\\
+\hline
+Desenvolvimento do caítulo de introdução&&&&&&&&&&&&&X&&&&&&&&&&&\\
+\hline
+Revisão do trabalho e preparação de apresentação para banca&&&&&&&&&&&&&&X&&&&&&&&&&\\
+\hline
+Busca de trabalhos para fundamentar a escolha dos bancos a serem comparados&&&&&&&&&&&&&&&X&&&&&&&&&\\
+\hline
+Análise de documentação, contribuições, suporte, disponibilidade e funcionalidades dos bancos escolhidos&&&&&&&&&&&&&&&&X&X&&&&&&&\\
+\hline
+Preparação do ambiente de testes reprodutível com nix e docker&&&&&&&&&&&&&&&&&&X&X&&&&&\\
+\hline
+Execução de benchmarks de ingestão e consumo de datasets reais&&&&&&&&&&&&&&&&&&&&X&&&&\\
+\hline
+Criação de datasets com dados sintéticos&&&&&&&&&&&&&&&&&&&&&X&&&\\
+\hline
+Execução de benchmarks de ingestão e consumo de datasets sintéticos&&&&&&&&&&&&&&&&&&&&&&X&&\\
+\hline
+Agregação de resultados e análise comparativa&&&&&&&&&&&&&&&&&&&&&&&X&\\
+\hline
+Elaboração da tabela final de comparação entre os bancos de dados&&&&&&&&&&&&&&&&&&&&&&&&X\\
+\hline
+\end{tabular}%
+}
+\end{landscape}

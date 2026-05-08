@@ -1,0 +1,109 @@
+\documentclass[portuguese,oneside]{UFFStex}
+
+% Para inserção de figuras.
+\usepackage{graphicx}
+\usepackage{pdflscape}
+% Para tabelas com elementos ocupando mais de uma linha
+\usepackage{multirow}
+% Para inserir figuras lado a lado.
+ \usepackage{subfigure}
+% Para formatar algoritmos.
+\usepackage{algorithmic}
+\usepackage[portuguese,algo2e,boxruled]{algorithm2e}
+% Hyperlink em capitulos, seções, citações
+\usepackage[hidelinks]{hyperref}
+% Bibliografia e citações padrão ABNT
+%https://mirrors.ibiblio.org/CTAN/macros/latex/contrib/abntex2/doc/abntex2cite-alf.pdf
+% Comandos: \citeonline{ref} \citeauthor{ref} \citeyear{ref}
+%\usepackage[num]{abntex2cite}	% numérica
+\usepackage[alf]{abntex2cite}	% alfabetica
+% Referência cruzada que já coloca o tipo (Tabela, Figura, etc)
+\usepackage[brazilian]{cleveref} 
+% Pacote para revisão de texto
+\setlength {\marginparwidth }{2cm}
+\usepackage{easyReview}
+\usepackage{booktabs}
+
+% Autor
+\author{Luiz Fernando Klein}
+
+% Título português e inglês
+\title{Comparação de bancos de dados de série temporal}
+      {Comparison of time series databases}
+
+% Tipo de trabalho
+\tipotrabalho{\tci}         % Trabalho de Conclusão I
+%\tipotrabalho{\tcii}        % Trabalho de Conclusão II
+
+% Curso
+\curso{\cc} % Ciência da Computação
+
+% Orientador
+\orientador{Geomar Schreiner}
+
+% Palavras chave e Keywords (min 1, max 5, comma-separated)
+\palavraschave{Banco de dados, Séries temporais, TimescaleDB, InfluxDB, Apache IoTDB}
+              {Database, Time series, TimescaleDB, InfluxDB, Apache IoTDB}
+
+\begin{document}
+
+%----------------------------------------------------------------
+% Ficha catalográfica (OBRIGATÓRIO para TCC II)
+%  Você pode gerar a ficha neste link também: 
+%   https://ficha.uffs.edu.br/
+%----------------------------------------------------------------
+\fichacatalografica
+
+%----------------------------------------------------------------
+% Folha de aprovação (OBRIGATÓRIO para TCC II)
+%   Primeiro parâmetro é a data da defesa
+%   Demais parâmetros são os membros da banca (pelo menos 2 nomes)
+%   Não precisa passar o nome do Orientador
+%----------------------------------------------------------------
+\folhadeaprovacao{XX/12/2025}{Denio Duarte - UFFS}{Giancarlo Salton - UFFS}{}
+
+
+%----------------------------------------------------------------
+% Depois da folha de aprovação vem a dedicatória e a epígrafe.
+%----------------------------------------------------------------
+%\dedigrafe{Dedico este trabalho a meus pais.}
+%          {The art of simplicity is a puzzle of complexity.}
+%          {Douglas Horton}
+
+% Resumo
+\begin{resumo}
+Este trabalho propõe uma revisão bibliográfica sobre bancos de dados de séries temporais (TSDBs), com foco em desempenho, arquitetura e aplicações práticas. O estudo visa analisar trabalhos comparativos entre sistemas como PostgreSQL, InfluxDB, TimescaleDB e Apache IoTDB, abordando métricas como taxa de ingestão, latência em consultas e consumo de recursos. A pesquisa explorará a adequação de diferentes TSDBs para cenários específicos, como IoT, edge computing e cloud, utilizando tanto conjuntos de dados reais quanto sintéticos. Ferramentas de benchmark consolidadas e soluções personalizadas serão avaliadas para compor as metodologias de teste. O objetivo é identificar padrões e lacunas na literatura, fornecendo um fundamento para futuras implementações e pesquisas na área.
+\end{resumo}
+
+% Abstract
+\begin{abstract}
+This work proposes a literature review on time-series databases (TSDBs), focusing on performance, architecture, and practical applications. The study aims to analyze comparative research on systems such as PostgreSQL, InfluxDB, TimescaleDB, and Apache IoTDB, covering metrics like ingestion rates, query latency, and resource usage. The research will explore the suitability of different TSDBs for specific scenarios, including IoT, edge computing, and cloud, using both real and synthetic datasets. Established benchmark tools and custom solutions will be evaluated for testing methodologies. The goal is to identify patterns and gaps in the literature, providing a foundation for future implementations and research in the field.
+\end{abstract}
+
+% Listas e sumário, nessa ordem. Somente o sumário é obrigatório.
+\listoffigures       % Lista de figuras      (OPCIONAL)
+\listoftables        % Lista de tabelas      (OPCIONAL)
+% \listofalgorithms    % Lista de algoritmos   (OPCIONAL)
+% \listofacronyms      % Lista de siglas       (OPCIONAL)
+% \listofsymbols       % Lista de símbolos     (OPCIONAL)
+\tableofcontents     % Sumário               (OBRIGATÓRIO)
+
+% Desenvolvimento
+\include{capitulos/1_introducao}
+\include{capitulos/2_referencial_teorico}
+\include{capitulos/3_trabalhos_relacionados}
+\include{capitulos/4_metodologia}
+
+% Bibliografia. 
+\bibliography{bibliografia}
+
+
+% Apêndice
+% \appendix
+% \chapter{Meu primeiro apêndice}
+
+% Anexos
+% \anexos
+% \chapter{Meu primeiro anexo}
+
+\end{document}

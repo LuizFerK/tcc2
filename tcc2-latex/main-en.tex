@@ -1,0 +1,185 @@
+%% —---------------------------------------------------
+%% sbcreviews-en.tex
+%% Template for SBC Reviews
+%% (https://journals-sol.sbc.org.br/index.php/reviews/)
+%%
+%% A versão do template inclui algumas
+%% modificações sobre o template original da REIC
+%% (https://journals-sol.sbc.org.br/index.php/reic)
+%%
+%% Licença: CCBY 4.0
+%% (https://creativecommons.org/licenses/by/4.0/)
+%% Sociedade Brasileira de Computação.
+
+\documentclass[english]{presets/sbcreviews-2025}%
+
+\usepackage[misc,geometry]{ifsym}
+
+%\usepackage{graphicx} % carregada dentro da classe
+%\usepackage{fontspec} % carregada dentro da classe
+%\usepackage{fontawesome} % carregada dentro da classe
+%\usepackage{color} % carregada dentro da classe
+%\usepackage{hyperref} % carregada dentro da classe
+
+\usepackage{presets/aas_macros}
+\usepackage[bottom]{footmisc}
+
+\usepackage{tabularray}
+% O pacote tabularray torna o uso dos pacotes abaixo desnecessarios.
+%\usepackage{supertabular}
+%\usepackage{multicol}
+%\usepackage{multirow}
+
+\usepackage{afterpage}
+\usepackage{url}
+\usepackage{pifont}
+
+\setcitestyle{square}
+
+\definecolor{engtitle}{rgb}{0.5,0.5,0.5}
+\definecolor{orcidlogo}{rgb}{0.37,0.48,0.13}
+\definecolor{unilogo}{rgb}{0.16, 0.26, 0.58}
+\definecolor{maillogo}{rgb}{0.58, 0.16, 0.26}
+\definecolor{darkblue}{rgb}{0.0,0.0,0.0}
+\hypersetup{colorlinks,breaklinks,
+            linkcolor=darkblue,urlcolor=darkblue,
+            anchorcolor=darkblue,citecolor=darkblue}
+%\hypersetup{colorlinks,citecolor=blue,linkcolor=blue,urlcolor=blue}
+% We disable hyperlinks by default with this line, to avoid the error "\pdfendlink ended up in different nesting level" while writing
+
+\jid{ROCS}
+\jtitle{SBC Computing Reviews, 202X, XX:1}
+\issn{2966-3938}
+\doi{10.5753/rocs.202X.XXXXXX}
+\copyrightstatement{This work is licensed under a Creative Commons Attribution 4.0 International License}
+\jyear{202X}
+
+\category{Review}
+
+\title[Comparison of time series databases]{Comparison of time series databases}
+
+%THE ORCID IS MANDATORY FOR EACH AUTHOR IN ROCS
+\author[Klein et al. 202X]{
+\affil{\textbf{Luiz Fernando Klein}~\orcidlink{0000-0000-0000-0000}~\textcolor{blue}{\faEnvelope}~~[{Universidade Federal}~|\href{mailto: ...}{~{\textit{luizkleinfernando@gmail.com}}}~]}
+}
+
+\begin{document}
+
+\begin{frontmatter}
+
+\maketitle
+
+\begin{mail}
+Institute of ..., University ..., Address, City, State, CEP, Brazil.
+\end{mail}
+
+
+\begin{abstract-en}
+This text, formatted as a scientific article, aims to present the new SBC paper template, describing its main features and explaining how it should be used. This version, more specifically, should be used exclusively for articles written in Portuguese that will be published in any event proceeding series at SBC OpenLib. The abstract in Portuguese, as you can see in this example, must be before the abstract in English and must have between 500 and 750 words.
+\end{abstract-en}
+
+\begin{keywords}
+Proceedings, Template, SBC OpenLib, Indexing
+\end{keywords}
+
+\begin{dates}
+% This information will be provided by the editor befeore publishing the paper
+\noindent{\sffamily\textbf{Received:}} DD Month YYYY~~~$\bullet$~~~
+{\sffamily\textbf{Accepted:}} DD Month YYYY~~~$\bullet$~~~
+{\sffamily\textbf{Published:}} DD Month YYYY
+
+\end{dates}
+
+
+%\begin{license}
+%Published under the Creative Commons Attribution 4.0 International Public License (CC BY 4.0)
+%\end{license}
+
+\end{frontmatter}
+
+% Chapters
+\input{chapters/1_introduction}
+\input{chapters/2_theoretical_foundation}
+\input{chapters/3_related_works}
+\input{chapters/4_methodology}
+\input{chapters/5_experiments}
+\input{chapters/6_conclusion}
+
+\begin{declarations}
+
+\begin{acknowledgements}
+THIS DECLARATION IS OPTIONAL.
+This is a multiline text of acknowledgments.
+Lorem ipsum dolor sit amet, consectetur adipiscing elit,
+sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+\end{acknowledgements}
+
+\begin{funding}
+THIS DECLARATION IS OPTIONAL. This research was funded by lorem ipsum dolor sit amet, consectetur adipiscing elit.
+\end{funding}
+
+\begin{contributions}
+THIS DECLARATION IS MANDATORY.
+\textit{Consider the SBC Code of Conduct.
+Participation in authorship: All authors of a published work
+or submitted for publication are expected to have actively participated in the respective work.}
+We suggest that authors describe their contribution using
+the CRediT Taxonomy (\href{https://credit.niso.org/}{https://credit.niso.org/}) as in this example:
+JV contributed to the design of this study. CB, RP, and CM performed the experiments.
+JV is the primary contributor and writer of this manuscript.
+All authors read and approved the final manuscript.
+\end{contributions}
+
+\begin{interests}
+THIS DECLARATION IS MANDATORY. If there are no competing interests, the authors should declare: ``The authors declare that they have no competing interests''. Otherwise, the declaration should be: ``The authors declare that they have the following competing interests, lorem ipsum dolor sit amet, consectetur adipiscing elit.''
+\end{interests}
+
+\begin{materials}
+THIS DECLARATION IS MANDATORY.
+\textit{Consider the SBC Code of Conduct.
+Reproducibility of research results:
+Where applicable, it is recommended that articles indicate
+the public availability of material used in the reviews,
+to facilitate the reproduction of the respective results by other researchers.}
+%
+If the authors have made their data and/or code publicly available, the statement should read:
+``The data and other materials created and/or used in this literature review
+are available at \ldots''.
+Otherwise, the statement should read:
+``The data and other materials created and/or used in this literature review
+will be made available upon request''.
+%
+All supplementary material made publicly available by the authors will appear
+on the article's publication page if accepted.
+\end{materials}
+
+\begin{aitools}
+THIS DECLARATION IS MANDATORY.
+\textit{Consider the SBC Code of Conduct.
+Use of Generative Artificial Intelligence (AI):
+The use of generative AI tools and technologies for content generation,
+in writing and/or reviewing the content of articles, must be explicitly declared in the paper.}
+The declaration should appear in this section, specifically defined for this purpose.
+The tools (and their versions) should be listed and where they were used, for example,
+texts, tables, graphs, citations, etc.
+These tools \textbf{may not} be listed as authors of an article.
+The use of such tools does not exempt the authors from responsibility
+for all of their content, including if plagiarism is identified.
+%
+If the authors did not use such tools, the statement should be:
+``The authors did not use generative AI tools in the development of the study.''
+\end{aitools}
+
+\begin{furtherinformation}
+Manuscripts must explicitly
+\textbf{indicate how the ethical issues of the research were addressed and managed},
+including the research approval by an ethics committee when applicable.
+\end{furtherinformation}
+
+\end{declarations}
+
+\bibliographystyle{presets/apalike-sol}
+\bibliography{refs}
+
+\end{document}
