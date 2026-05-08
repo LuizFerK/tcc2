@@ -85,6 +85,14 @@ narrow tuning win but a structural property of its design: every architectural d
 from protocol choice to durability model was made to maximise ingestion throughput for
 IoT workloads.
 
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/chart_write_throughput_small}
+  \caption{Write throughput (pts/s, log scale) for all four write workloads at small
+           scale (tuned). IoTDB leads across every test type.}
+  \label{fig:write_throughput_small}
+\end{figure}
+
 \subsubsection{Batch Size Sensitivity}
 
 Table~\ref{tab:batch} shows how throughput changes between BATCH\_SIZE=1 (one write request
@@ -149,6 +157,15 @@ In absolute throughput, IoTDB still far leads under out-of-order conditions (1.8
 out-of-order throughput (IoTDB leads at every scale) and relative degradation from write
 disorder (TimescaleDB is most resilient with the smallest fractional penalty).
 
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/chart_ooo_degradation}
+  \caption{Out-of-order throughput degradation (\%) relative to baseline sequential write,
+           across all three scales. TimescaleDB's B-tree remains stable; InfluxDB's TSM
+           block rewrites consistently incur the largest relative penalty.}
+  \label{fig:ooo_degradation}
+\end{figure}
+
 \subsection{Read Performance}
 \label{sec:read-results}
 
@@ -200,6 +217,15 @@ large --- confirms an approximately linear relationship between stored data and 
 cost. In a long-running production deployment, InfluxDB's latest-point latency will
 continue to grow, making it unsuitable for high-frequency real-time monitoring as the
 dataset ages.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/chart_latest_point_scaling}
+  \caption{Latest-point average latency (ms) across scales. TimescaleDB and IoTDB stay
+           near zero (O(1) access paths); InfluxDB grows linearly as the TSM file count
+           increases.}
+  \label{fig:latest_point_scaling}
+\end{figure}
 
 \subsubsection{Downsampling}
 
@@ -278,6 +304,15 @@ skipping based on time-range metadata in the TSM index, producing a 7$\times$ sc
 --- significantly better than TimescaleDB's but still 10$\times$ worse than IoTDB in absolute
 terms at large scale.
 
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/chart_value_filter_scaling}
+  \caption{Value-filter average latency (ms, log scale) across scales. IoTDB's chunk
+           min/max statistics produce sublinear growth (5.2$\times$ for 100$\times$
+           data); TimescaleDB's BRIN index degrades superlinearly (21.3$\times$).}
+  \label{fig:value_filter_scaling}
+\end{figure}
+
 \subsubsection{Range Queries}
 
 Range queries retrieve all data points within a time window without value filtering.
@@ -324,8 +359,27 @@ at large). For memory-constrained environments --- IoT edge gateways, embedded s
 or cloud instances with limited RAM --- InfluxDB's leaner footprint may be the deciding
 factor even where write throughput is the primary concern.
 
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/chart_memory_scaling}
+  \caption{Peak memory footprint (MB) across scales (tuned runs). IoTDB's JVM working
+           set grows to 15\,GB at large scale. InfluxDB remains the most
+           memory-efficient option at every scale.}
+  \label{fig:memory_scaling}
+\end{figure}
+
 \subsection{Scale Effects}
 \label{sec:scale-effects}
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\textwidth]{figures/chart_heatmap_latency}
+  \caption{Latency degradation heatmap across read workload types and scale transitions
+           (tuned runs). Green indicates stable latency; red indicates high growth.
+           IoTDB is consistently green except for value-filter (small$\to$medium);
+           TimescaleDB shows severe degradation on value-filter at both transitions.}
+  \label{fig:heatmap_latency}
+\end{figure*}
 
 \subsubsection{Write Throughput Scaling}
 
@@ -360,6 +414,15 @@ larger write volumes allow the TSM compaction engine to amortize its overhead mo
 TimescaleDB shows a similar pattern: flat from small to medium, then improving at large
 scale as the longer run allows more checkpoint intervals and larger individual batches to
 accumulate.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/chart_write_scaling}
+  \caption{Baseline write throughput (pts/s, log scale) across scales (tuned). IoTDB's
+           superlinear growth reflects JVM JIT saturation; InfluxDB and TimescaleDB
+           remain flat until large scale.}
+  \label{fig:write_scaling}
+\end{figure}
 
 \subsubsection{IoTDB BATCH-SMALL JIT Saturation}
 
@@ -466,6 +529,16 @@ hardware ceiling --- it was CPU-starved by competing processes.
 These two reversals underscore the importance of isolated, correctly-tuned benchmark
 methodology. Without sequential container lifecycles and standard database configuration,
 both claims would have been published as validated findings.
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\textwidth]{figures/chart_read_saturation_comparison}
+  \caption{READ workload average CPU utilisation (top) and P99 latency (bottom, log
+           scale) for original (hatched) vs.\ tuned (solid) runs across all three
+           scales. TimescaleDB's large-scale CPU drops from 98\% to 77\% and P99 from
+           4{,}233\,ms to 1{,}850\,ms once competing containers are removed.}
+  \label{fig:read_saturation_comparison}
+\end{figure*}
 
 \subsection{Mixed Read Workload}
 
