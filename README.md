@@ -1,6 +1,6 @@
-# IoT Time-Series Database Benchmark
+# A Reproducible Benchmark of Apache IoTDB, InfluxDB, and TimescaleDB for IoT Workloads
 
-Undergraduate thesis (TCC) project comparing three time-series databases — **Apache IoTDB**, **InfluxDB**, and **TimescaleDB** — across nine workload scenarios representative of real IoT deployments.
+> Undergraduate thesis (TCC) project comparing three time-series databases — **Apache IoTDB**, **InfluxDB**, and **TimescaleDB** — across nine workload scenarios representative of real IoT deployments, presented for approval in the Computer Science program at Universidade Federal da Fronteira Sul (UFFS) in 2026.
 
 ---
 
@@ -74,8 +74,8 @@ scripts/
 
 ```bash
 # Clone with submodule
-git clone --recurse-submodules <repo-url>
-cd tcc2
+git clone --recurse-submodules https://github.com/LuizFerK/iot-benchrunner
+cd iot-benchrunner
 ```
 
 ### Nix
@@ -126,6 +126,55 @@ python3 benchmark.py --db timescaledb --scale medium
 | small  | 5       | 10      | 10      | 100        | 1000  |
 | medium | 5       | 10      | 10      | 100        | 5000  |
 | large  | 10      | 50      | 20      | 100        | 5000  |
+
+---
+
+## Generating Charts
+
+After running benchmarks the result CSVs are written to `results/`. The `charts.py` script generates all figures from those files.
+
+### Dependencies
+
+`matplotlib`, `numpy`, and `pandas` are required. Inside `nix develop` they are already available.
+
+### Usage
+
+```bash
+# All chart sets, English labels (default)
+python3 charts.py
+
+# Specific scale
+python3 charts.py --source small
+python3 charts.py --source medium
+python3 charts.py --source large
+
+# Rerun / isolation comparison charts
+python3 charts.py --source rerun
+
+# Cross-scale overlay plots
+python3 charts.py --source comparison
+
+# Portuguese labels
+python3 charts.py --language pt-br
+
+# Generate every available chart set at once
+python3 charts.py --source all
+```
+
+### `--source` values
+
+| Value | Description |
+|-------|-------------|
+| `small` | Charts for the small-scale run only |
+| `medium` | Charts for the medium-scale run only |
+| `large` | Charts for the large-scale run only |
+| `mixed` | Combined small + medium + large comparison |
+| `all` | All of the above |
+| `rerun` | Charts from the isolated/tuned reruns |
+| `rerun-small` / `rerun-medium` / `rerun-large` / `rerun-mixed` | Per-scale rerun charts |
+| `comparison` | Cross-scale overlay plots used in the paper |
+
+Charts are saved as PNG files in the `charts/` directory, organized by source and language.
 
 ---
 

@@ -226,6 +226,63 @@ Esse nível de automação torna os resultados rastreáveis a um ambiente de exe
 versionado. Qualquer pesquisador com o repositório e o Docker disponíveis pode reproduzir o
 conjunto de dados completo do zero.
 
+\subsection{Pacote de Replicação}
+\label{sec:replication-pt}
+
+A infraestrutura completa de benchmark está publicamente disponível em
+\url{https://github.com/LuizFerK/iot-benchrunner}. Pesquisadores podem
+reproduzir o ambiente experimental completo em qualquer host Linux
+utilizando o toolchain Nix ou pacotes de sistema convencionais.
+
+\textbf{Requisitos.} Java~17, Maven, Python~3 e Docker com Docker Compose
+são necessários. Usuários Nix obtêm todas as dependências automaticamente
+via o flake fornecido; usuários não-Nix devem instalar as mesmas versões
+manualmente.
+
+\textbf{Configuração.} Clone o repositório incluindo o submódulo
+\texttt{iot-benchmark}, em seguida compile os clientes Java uma única vez:
+
+\begin{verbatim}
+git clone --recurse-submodules \
+  https://github.com/LuizFerK/iot-benchrunner
+cd iot-benchrunner
+
+# Nix (recomendado)
+nix run .#build
+
+# Sem Nix
+cd iot-benchmark
+mvn -pl influxdb-2.0,timescaledb,iotdb-1.3 \
+  package -DskipTests -q
+cd ..
+\end{verbatim}
+
+\textbf{Execução.} Uma rodada completa com nove testes e três bancos de
+dados em qualquer escala resume-se a um único comando. Usuários Nix devem
+primeiro entrar no ambiente de desenvolvimento com \texttt{nix~develop},
+que fornece todas as dependências de execução.
+
+\begin{verbatim}
+python3 benchmark.py --scale small   # ~5 min
+python3 benchmark.py --scale medium  # ~30 min
+python3 benchmark.py --scale large   # ~2 h
+\end{verbatim}
+
+\textbf{Geração de gráficos.} Após o benchmark produzir os CSVs de
+resultados no diretório \texttt{results/}, o script de visualização
+regenera todas as figuras utilizadas neste trabalho:
+
+\begin{verbatim}
+python3 charts.py --source all \
+  --language pt-br
+\end{verbatim}
+
+O parâmetro \texttt{--source} aceita escalas individuais
+(\texttt{small}, \texttt{medium}, \texttt{large}), variantes de
+reexecução e \texttt{comparison} para gráficos de sobreposição entre
+escalas. Os arquivos PNG de saída são gravados no diretório
+\texttt{charts/}.
+
 \subsection{Métricas}
 \label{sec:metrics}
 
