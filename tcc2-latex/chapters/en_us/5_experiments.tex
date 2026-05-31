@@ -4,7 +4,7 @@
 \subsection{Test Environment}
 
 All benchmarks were executed on a single host machine with the specifications listed in
-Table~\ref{tab:hardware}. The three database containers and the Java benchmark client
+Table~\ref{tab:hardware}. The three database containers and the benchmark client
 shared this machine with no concurrent workloads running during test sessions.
 
 \begin{table}[ht]
@@ -80,10 +80,10 @@ TSM engine maintains a Time Series Index (TSI) on every write. TimescaleDB's B-t
 BRIN indexes grow with data volume, and autovacuum activity increases write overhead
 as the hypertable expands.
 
-The combination of these three factors means that IoTDB's write advantage is not a
-narrow tuning win but a structural property of its design: every architectural decision
-from protocol choice to durability model was made to maximise ingestion throughput for
-IoT workloads.
+The combination of these three factors indicates that IoTDB's write advantage has an
+architectural basis: the binary protocol, asynchronous buffering, and absence of
+synchronous index maintenance act cumulatively and are not eliminated by configuration
+tuning.
 
 \begin{figure}[ht]
   \centering
@@ -203,7 +203,7 @@ tuned runs.
 \end{table}
 
 TimescaleDB and IoTDB maintain sub-millisecond or near-sub-millisecond latency across
-100$\times$ data growth. Both exploit database-specific shortcuts for last-value retrieval.
+a hundredfold increase in data volume. Both exploit database-specific shortcuts for last-value retrieval.
 TimescaleDB executes a \texttt{SELECT~...~ORDER~BY~time~DESC~LIMIT~1} against the most
 recent hypertable chunk via a reverse B-tree scan; because hypertable chunks are ordered
 by time, this always touches the smallest possible amount of data. IoTDB maintains a
@@ -214,9 +214,10 @@ InfluxDB has no equivalent shortcut. It must seek to the tail of each series' TS
 blocks, and that seek cost grows as more TSM files accumulate over the dataset lifetime.
 The resulting progression (9.24\,ms at small, 21.72\,ms at medium, 23.24\,ms at
 large) confirms an approximately linear relationship between stored data and latest-point
-cost. In a long-running production deployment, InfluxDB's latest-point latency will
-continue to grow, making it unsuitable for high-frequency real-time monitoring as the
-dataset ages.
+cost. Across the evaluated scales, InfluxDB's latest-point latency showed approximately linear
+growth with stored data volume. In deployments without active retention or downsampling
+policies, this pattern may make it disadvantageous for high-frequency real-time
+monitoring; deployments that apply such policies may mitigate this behavior.
 
 \begin{figure}[ht]
   \centering
@@ -246,8 +247,8 @@ Table~\ref{tab:downsample} shows GROUP~BY time-bucket downsampling latency.
   \end{tabular}
 \end{table}
 
-TimescaleDB's \texttt{time\_bucket()} aggregation stays below 1\,ms across 100$\times$ data
-growth, the most robust finding in the entire benchmark. The key is that \texttt{time\_bucket()}
+TimescaleDB's \texttt{time\_bucket()} aggregation stays below 1\,ms across a hundredfold
+increase in data volume, a result that holds consistently across all tested scales. The key is that \texttt{time\_bucket()}
 queries scan a fixed time window rather than the full dataset: once the relevant chunks
 are warm in \texttt{shared\_buffers}, query cost is bounded by the window size, not by
 total stored data. This property makes TimescaleDB an excellent fit for dashboard workloads
@@ -271,7 +272,7 @@ Table~\ref{tab:vfilter} shows value-filter latency and its scaling behavior acro
 \begin{table}[ht]
   \centering
   \caption{Value-filter average latency (ms) across scales (tuned).
-  The ratio column shows latency growth from small to large scale (100$\times$ more data).}
+  The ratio column shows latency growth from small to large scale (data volume one hundred times larger).}
   \label{tab:vfilter}
   \begin{tabular}{lrrrr}
     \hline
@@ -288,13 +289,13 @@ IoTDB's advantage is large and \textit{improves} with scale. Each TsFile chunk s
 per-series min/max statistics. A value predicate can skip entire chunks whose stored range
 does not intersect the predicate threshold, providing lightweight secondary indexing at
 the storage layer. At large scale, with more data per chunk, a larger fraction of chunks
-can be pruned, producing the sublinear scaling ratio (5.2$\times$ for 100$\times$ more data).
+can be pruned, producing the sublinear scaling ratio (5.2$\times$ for a hundredfold increase in data).
 This is the expected behavior of a statistics-based skip structure: the pruning ratio
 improves as chunks grow denser.
 
 TimescaleDB uses PostgreSQL's BRIN (Block Range INdex), which records min/max values per
 block range on disk. BRIN provides coarser-grained pruning than IoTDB's per-chunk statistics
-and degrades at a superlinear rate (21.3$\times$ for 100$\times$ data). At large scale,
+and degrades at a superlinear rate (21.3$\times$ for a hundredfold increase in data). At large scale,
 TimescaleDB averages 510\,ms per value-filter query, a 26$\times$ disadvantage relative
 to IoTDB. This workload also drives TimescaleDB to its highest CPU utilisation (77\% average,
 83\% peak), indicating the query executor is the bottleneck.
@@ -308,8 +309,8 @@ terms at large scale.
   \centering
   \includegraphics[width=\columnwidth]{figures/en_us/chart_value_filter_scaling}
   \caption{Value-filter average latency (ms, log scale) across scales. IoTDB's chunk
-    min/max statistics produce sublinear growth (5.2$\times$ for 100$\times$
-  data); TimescaleDB's BRIN index degrades superlinearly (21.3$\times$).}
+    min/max statistics produce sublinear growth (5.2$\times$ for a hundredfold increase in data);
+  TimescaleDB's BRIN index degrades superlinearly (21.3$\times$).}
   \label{fig:value_filter_scaling}
 \end{figure}
 
@@ -452,7 +453,7 @@ Among the multi-scale trends, InfluxDB's latest-point latency progression (9.24 
 scalability issue. Every incremental TSM file written to disk adds to the seek depth
 that a latest-point query must traverse. TimescaleDB and IoTDB show flat or even
 \textit{decreasing} latest-point latency (due to JIT warm-up for IoTDB) across the
-same 100$\times$ data growth. Any deployment that will accumulate months or years of
+same hundredfold increase in data volume. Any deployment that will accumulate months or years of
 data will see InfluxDB's latest-point cost continue to grow, while TimescaleDB's
 and IoTDB's costs remain bounded.
 
@@ -489,9 +490,9 @@ explaining the 40\% reduction in value-filter latency, a workload that requires 
 filtered results. \texttt{checkpoint\_completion\_target=0.9} spreads checkpoint I/O more
 evenly across the checkpoint interval, reducing the write stall spikes that inflate P99
 latency (BATCH-LARGE P99 dropped from 1{,}069\,ms to 812\,ms). These improvements
-confirm that default PostgreSQL settings are poorly calibrated for write-intensive workloads
-on modern hardware and that standard production tuning should always be applied before
-reporting performance results.
+indicate that default PostgreSQL settings are intentionally conservative to ensure
+correctness on low-resource hardware, and that tuning via pgtune or an equivalent tool
+should be applied before reporting results on mid- to high-end hardware.
 
 \subsubsection{InfluxDB Gains from Isolation}
 

@@ -48,19 +48,19 @@ anchorcolor=darkblue,citecolor=darkblue}
 % We disable hyperlinks by default with this line, to avoid the error "\pdfendlink ended up in different nesting level" while writing
 
 \jid{ROCS}
-\jtitle{SBC Computing Reviews, 202X, XX:1}
+\jtitle{SBC Computing Reviews, 2026, XX:1}
 \issn{2966-3938}
-\doi{10.5753/rocs.202X.XXXXXX}
+\doi{10.5753/rocs.2026.XXXXXX}
 \copyrightstatement{This work is licensed under a Creative Commons Attribution 4.0 International License}
-\jyear{202X}
+\jyear{2026}
 
 \category{Review}
 
-\title[Comparison of time series databases]{Comparison of time series databases}
+\title[A Reproducible Benchmark of Apache IoTDB, InfluxDB, and TimescaleDB for IoT Workloads]{A Reproducible Benchmark of Apache IoTDB, InfluxDB, and TimescaleDB for IoT Workloads}
 
 %THE ORCID IS MANDATORY FOR EACH AUTHOR IN ROCS
-\author[Klein et al. 202X]{
-  \affil{\textbf{Luiz Fernando Klein}~\orcidlink{0000-0000-0000-0000}~\textcolor{blue}{\faEnvelope}~~[{Universidade Federal}~|\href{mailto: ...}{~{\textit{luizkleinfernando@gmail.com}}}~]}
+\author[Klein 2026]{
+  \affil{\textbf{Luiz Fernando Klein}~\orcidlink{0009-0001-8949-3248}~\textcolor{blue}{\faEnvelope}~~[{Universidade Federal da Fronteira Sul - UFFS}~|\href{mailto: ...}{~{\textit{luizkleinfernando@gmail.com}}}~]}
 }
 
 \begin{document}
@@ -70,23 +70,23 @@ anchorcolor=darkblue,citecolor=darkblue}
   \maketitle
 
   \begin{mail}
-    Institute of ..., University ..., Address, City, State, CEP, Brazil.
+    Computer Science Course, Universidade Federal da Fronteira Sul -- UFFS, Rodovia SC 484, Km 02, Chapecó, SC, 89815-899, Brazil.
   \end{mail}
 
   \begin{abstract-en}
     The rapid growth of Internet of Things deployments has generated unprecedented volumes of
-    time-stamped sensor data, exposing the limitations of traditional databases and driving the
+    time-indexed sensor data, exposing the limitations of traditional databases and driving the
     adoption of specialized Time Series Databases (TSDBs). Despite growing interest, most published
     TSDB benchmarks lack sufficient scripts and configurations for independent replication.
 
     This paper presents a controlled, reproducible benchmark comparing Apache IoTDB~1.3.0,
     InfluxDB~2.7, and TimescaleDB (PostgreSQL~15) across nine IoT workload types at three
-    data-volume scales spanning 100$\times$ in data size, using a fully scripted infrastructure
-    built on Docker Compose, Nix, and iot-benchmark.
+    data-volume scales spanning a hundredfold range in data size, using a fully scripted infrastructure
+    built on Docker Compose and iot-benchmark.
 
     Results show that no single database dominates all workloads. IoTDB leads on write throughput
     (23.6\,M\,pts/s at large scale) and value-filter scaling (5.2$\times$ latency growth for
-    100$\times$ data). TimescaleDB provides sub-millisecond downsampling across all scales and the
+    a hundredfold increase in data). TimescaleDB provides sub-millisecond downsampling across all scales and the
     fastest latest-point lookups, backed by full SQL compatibility. InfluxDB offers a balanced
     middle ground with lower memory requirements. A key finding is that shared-resource benchmark
     environments produce misleading results: two conclusions from the initial runs were reversed
@@ -131,8 +131,8 @@ anchorcolor=darkblue,citecolor=darkblue}
   \end{interests}
 
   \begin{materials}
-    The benchmark scripts, Docker Compose configurations, Nix flake environment, and result datasets
-    created and used in this study are publicly available at
+    The benchmark scripts, Docker Compose configurations, declarative build environment
+    (Nix flake), and result datasets created and used in this study are publicly available at
     \url{https://github.com/LuizFerK/tcc2}.
   \end{materials}
 

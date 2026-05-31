@@ -1,4 +1,4 @@
-\section{Fundamento Teórico}
+\section{Fundamentação Teórica}
 \label{sec:theoretical}
 
 Esta seção apresenta os conceitos fundamentais que embasam esta pesquisa. Está organizada em
@@ -18,7 +18,7 @@ conveniente e eficiente.
 
 O gerenciamento desses dados é realizado por um Sistema Gerenciador de Banco de Dados (SGBD),
 que é um software projetado para auxiliar na manutenção e uso de grandes coleções de
-dados~\cite{Ramakrishnan2003}. A necessidade de tais sistemas cresceu rapidamente, pois a
+dados~\citep{Ramakrishnan2003}. A necessidade de tais sistemas cresceu rapidamente, pois a
 alternativa de armazenar dados em arquivos planos e escrever código de gerenciamento específico
 para cada aplicação produz soluções que não são transferíveis entre aplicações e não oferecem
 garantias de integridade ou de acesso concorrente seguro.
@@ -40,7 +40,7 @@ recuperação de falhas.
 
 O modelo relacional, proposto por Codd em 1970, é simples e elegante: um banco de dados é visto
 como uma coleção de relações (tabelas com linhas e colunas), uma representação tão intuitiva
-que mesmo usuários não especialistas conseguem entender o conteúdo armazenado~\cite{Ramakrishnan2003}.
+que mesmo usuários não especialistas conseguem entender o conteúdo armazenado~\citep{Ramakrishnan2003}.
 A estrutura de cada relação consiste em um esquema (nomes dos campos e seus domínios) e uma
 instância (o conjunto de tuplas, ou registros). Uma propriedade essencial é que cada relação é
 um conjunto de tuplas únicas, garantindo a ausência de registros duplicados. Restrições de
@@ -58,12 +58,12 @@ esquema relacional.
 
 \subsection{Bancos de Dados Distribuídos}
 
-Os bancos de dados distribuídos (BDDs) representam a convergência de duas tecnologias
-aparentemente opostas: sistemas de banco de dados e redes de computadores~\cite{Ozsu2011}.
-Enquanto os sistemas de banco de dados tradicionais promovem a centralização para controle e
-integridade, as redes de computadores incentivam a distribuição e a descentralização. A tecnologia
-dos BDDs sintetiza esses conceitos, demonstrando que a integração de dados não implica
-necessariamente centralização física.
+Os bancos de dados distribuídos (BDDs) são a convergência das tecnologias de sistemas de
+banco de dados e redes de computadores~\citep{Ozsu2011}.
+Os sistemas de banco de dados fornecem os mecanismos de armazenamento, consulta e controle
+de integridade dos dados, enquanto as redes de computadores viabilizam a distribuição física
+entre múltiplos nós. A tecnologia dos BDDs combina esses dois campos, demonstrando que a
+integração de dados não implica necessariamente centralização física.
 
 Para~\cite{Silberschatz2020}, um sistema de banco de dados distribuído é composto por múltiplas
 instâncias com bancos de dados locais, cada uma capaz de processar transações locais, ao mesmo
@@ -71,14 +71,14 @@ tempo em que executa transações globais que acessam dados em múltiplos locais
 comunicação entre sítios.
 
 Um banco de dados distribuído é definido como uma coleção de múltiplos bancos de dados
-logicamente inter-relacionados, distribuídos por uma rede de computadores~\cite{Ozsu2011}.
+logicamente inter-relacionados, distribuídos por uma rede de computadores~\citep{Ozsu2011}.
 O SGBD distribuído (SGBDD) é o software que gerencia esse banco de dados distribuído, tornando
 a distribuição transparente para os usuários. Um BDD não é simplesmente uma coleção de arquivos
 armazenados em diferentes nós de rede; é um sistema estruturado com um esquema definido,
 acessível por meio de uma interface comum.
 
 A arquitetura de um SGBDD pode assumir diversas formas, incluindo cliente/servidor,
-ponto-a-ponto e sistemas multibanco~\cite{Ozsu2011}. Em sistemas cliente/servidor, as funções
+ponto-a-ponto e sistemas multibanco~\citep{Ozsu2011}. Em sistemas cliente/servidor, as funções
 são divididas entre clientes (que gerenciam a interface do usuário) e servidores (responsáveis
 pelo gerenciamento de dados). Em sistemas ponto-a-ponto, todas as máquinas possuem
 funcionalidade completa de SGBD e podem se comunicar diretamente. Os sistemas multibanco lidam
@@ -98,7 +98,7 @@ não a centralização.
 
 Os Bancos de Dados de Séries Temporais (BDSTs) são uma categoria especializada de sistemas
 de armazenamento projetados para lidar com dados registrados como uma sequência de valores,
-cada um associado a um carimbo de tempo específico. De acordo com~\cite{Ozsu2011}, uma série
+cada um associado a um instante de tempo específico. De acordo com~\cite{Ozsu2011}, uma série
 temporal é um conjunto de valores de atributos ao longo de um período de tempo. Essa
 característica fundamental diferencia os BDSTs dos bancos de dados de uso geral: eles são
 otimizados para consultas baseadas em intervalos de tempo, oferecendo desempenho superior para
@@ -107,7 +107,7 @@ esse padrão de acesso.
 Registros meteorológicos, indicadores econômicos e métricas de saúde de pacientes são todos
 dados de séries temporais. Os dados de séries temporais também incluem métricas de servidores,
 monitoramento de desempenho de aplicações, dados de rede, dados de sensores, eventos, cliques
-e muitos outros tipos de dados analíticos~\cite{InfluxDataTimeSeries}.
+e muitos outros tipos de dados analíticos~\citep{InfluxDataTimeSeries}.
 A Figura~\ref{fig:temporal_data} ilustra uma série temporal de medições meteorológicas.
 
 \begin{figure}[ht]
@@ -122,12 +122,12 @@ A Figura~\ref{fig:temporal_data} ilustra uma série temporal de medições meteo
   \centering
   \includegraphics[width=\columnwidth]{figures/pt_br/registro_temporal}
   \caption{Exemplo de tabela em um BDST representando a série temporal climática.
-  Cada linha corresponde a uma medição com carimbo de tempo.}
+  Cada linha corresponde a uma medição indexada por tempo.}
   \label{fig:tsdb_record}
 \end{figure}
 
 A Figura~\ref{fig:tsdb_record} mostra a tabela correspondente em um BDST, onde cada linha é um
-registro com carimbo de tempo que captura pressão atmosférica, temperatura, umidade e outras
+registro indexado por tempo que captura pressão atmosférica, temperatura, umidade e outras
 leituras em um momento específico.
 
 Como explicado por~\cite{Ozsu2011}, uma série temporal normalmente consiste apenas em valores
@@ -149,7 +149,7 @@ em medições pontuais.
 
 No contexto moderno, os BDSTs enfrentam novos desafios devido ao volume, velocidade e variedade
 dos dados gerados. O que costumava ser coletado em 10 minutos para alguns sistemas muito ativos
-é agora gerado a cada segundo~\cite{Dunning2014}. Essa explosão no volume de dados exige novas
+é agora gerado a cada segundo~\citep{Dunning2014}. Essa explosão no volume de dados exige novas
 abordagens de armazenamento e acesso, tornando os bancos de dados NoSQL particularmente
 adequados para essa escala. Para consultas baseadas em tempo em escalas muito grandes, esses
 acessos podem ser implementados como varreduras grandes e contíguas, extremamente eficientes
@@ -161,15 +161,15 @@ armazenam dados ponto a ponto; (2) um design híbrido misturando tabelas largas 
 em blob; e (3) inserção direta de blob a partir de um cache em memória, que pode atingir taxas
 de ingestão até 1.000$\times$ mais rápidas que as abordagens ponto a ponto. Os BDSTs armazenam
 múltiplas séries temporais de forma que consultas que recuperam dados de uma ou poucas séries
-para um intervalo de tempo específico sejam particularmente eficientes~\cite{Dunning2014}.
+para um intervalo de tempo específico sejam particularmente eficientes~\citep{Dunning2014}.
 Essa eficiência é alcançada por meio de estratégias de armazenamento que agrupam fisicamente
 dados temporalmente próximos, habilitando operações eficientes de varredura sequencial.
 
 As aplicações dos BDSTs são diversas e estão em expansão. No setor financeiro, a velocidade das
 negociações e a necessidade de latência extremamente baixa tornam os BDSTs de alto desempenho
-essenciais~\cite{Dunning2014}. No contexto IoT, os BDSTs ocupam uma posição central no fluxo de
+essenciais~\citep{Dunning2014}. No contexto IoT, os BDSTs ocupam uma posição central no fluxo de
 dados de sensor à percepção que está mudando rapidamente como percebemos e entendemos o
-mundo~\cite{Dunning2014}.
+mundo~\citep{Dunning2014}.
 
 \subsubsection{Arquiteturas de Banco de Dados para Séries Temporais}
 
@@ -188,7 +188,7 @@ de escrita. A interface de ingestão nativa é um protocolo binário Thrift RPC
 com sobrecarga mínima. As estatísticas de mínimo/máximo armazenadas por bloco permitem a
 eliminação antecipada de blocos que não correspondem ao predicado durante consultas de filtro
 de valor, uma propriedade que se torna cada vez mais vantajosa à medida que o conjunto de
-dados cresce~\cite{wang2023iotdb}.
+dados cresce~\citep{wang2023iotdb}.
 
 \textbf{InfluxDB}~\cite{naqvi2017influxdb} usa um motor de armazenamento Time-Structured Merge
 Tree (TSM), que organiza dados em blocos comprimidos ordenados por tempo. Assim como a árvore
@@ -197,9 +197,9 @@ imutáveis em disco. A ingestão de dados é realizada via API HTTP com protocol
 os clientes enviam texto no formato de protocolo de linha representando medições. As consultas
 usam a linguagem Flux. O motor TSM mantém um Índice de Séries Temporais (TSI) para busca de
 séries. A memória em processo do InfluxDB é dominada pelo cache TSM, pelo índice de séries e
-pela sobrecarga do runtime Go~\cite{naqvi2017influxdb}.
+pela sobrecarga do runtime Go~\citep{naqvi2017influxdb}.
 
-\textbf{TimescaleDB} estende o PostgreSQL com otimizações para séries temporais~\cite{Ramakrishnan2003}.
+\textbf{TimescaleDB} estende o PostgreSQL com otimizações para séries temporais~\citep{Ramakrishnan2003}.
 Sua estrutura de dados primária é a \textit{hipertabela}: uma tabela lógica que é
 automaticamente particionada em \textit{blocos} físicos por intervalo de tempo. Consultas que
 especificam um intervalo de tempo podem eliminar blocos automaticamente, tocando apenas as
@@ -245,7 +245,7 @@ desempenho: usar a média simples de vazões pode ser enganoso. O método corret
 tempo total para uma carga de trabalho mista e derivar a vazão média a partir disso, ou usar a
 média harmônica, que reflete melhor a realidade quando há diferentes tipos de operações.
 
-A literatura de benchmarks categoriza seus instrumentos em vários grupos~\cite{Ramakrishnan2003}.
+A literatura de benchmarks categoriza seus instrumentos em vários grupos~\citep{Ramakrishnan2003}.
 Os benchmarks de \textit{Processamento de Transações Online} (TPC-A, TPC-B, TPC-C) definem
 medidas padrão de transações por segundo e custo por transação. O TPC-C, o mais amplamente
 utilizado, modela um ambiente complexo de armazém com cinco tipos de transação, exercitando uma
@@ -266,9 +266,9 @@ suficientemente à carga de trabalho real, benchmarks personalizados que adaptem
 tarefas padrão por operações mais representativas devem ser considerados.
 
 A reprodutibilidade é uma propriedade essencial, mas frequentemente negligenciada, dos benchmarks
-de banco de dados. Como demonstrado nos trabalhos relacionados revisados neste estudo, apenas
-uma minoria das avaliações comparativas publicadas fornece os scripts e configurações exatas
-necessárias para replicação independente~\cite{pereira2023mulletbench}. Isso limita a capacidade
+de banco de dados. Como observado nos cinco estudos de desempenho revisados neste trabalho, apenas um
+fornece os scripts e configurações exatas necessárias para replicação
+independente~\citep{pereira2023mulletbench}. Isso limita a capacidade
 de validar resultados, comparar descobertas entre estudos e construir sobre trabalhos anteriores,
 uma lacuna que este estudo aborda diretamente por meio de sua infraestrutura de benchmark
 totalmente automatizada e publicamente disponível.

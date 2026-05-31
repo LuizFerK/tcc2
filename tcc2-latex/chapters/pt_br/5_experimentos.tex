@@ -83,10 +83,10 @@ O motor TSM do InfluxDB mantém um Índice de Séries Temporais (TSI) a cada esc
 B-tree e BRIN do TimescaleDB crescem com o volume de dados, e a atividade de autovacuum
 aumenta a sobrecarga de escrita à medida que a hipertabela se expande.
 
-A combinação desses três fatores significa que a vantagem de escrita do IoTDB não é uma
-vitória estreita de ajuste, mas uma propriedade estrutural de seu design: cada decisão
-arquitetural (da escolha do protocolo ao modelo de durabilidade) foi tomada para
-maximizar a vazão de ingestão para cargas de trabalho IoT.
+A combinação desses três fatores indica que a vantagem de escrita do IoTDB tem base
+arquitetural: o protocolo binário, o buffering assíncrono e a ausência de manutenção
+de índice síncrona atuam de forma cumulativa, não sendo eliminados por ajuste de
+configuração.
 
 \begin{figure}[ht]
   \centering
@@ -150,7 +150,7 @@ de dados com chegada atrasada.
 \end{table}
 
 O TimescaleDB mostra a menor degradação relativa porque as atualizações de índice B-tree do
-PostgreSQL são independentes da ordem: inserir uma linha com um carimbo de tempo mais antigo
+PostgreSQL são independentes da ordem: inserir uma linha com um instante de tempo anterior
 incorre no mesmo custo que inserir uma na fronteira de escrita atual. A penalidade de 13,5\%
 do IoTDB surge porque sua árvore LSM deve compactar entradas desordenadas para restaurar a
 ordem classificada exigida pelos blocos TsFile. O InfluxDB incorre na maior penalidade
@@ -213,7 +213,7 @@ para as execuções ajustadas.
 \end{table}
 
 TimescaleDB e IoTDB mantêm latência abaixo de um milissegundo ou próxima disso em todo o
-crescimento de 100$\times$ nos dados. Ambos exploram atalhos específicos do banco de dados
+crescimento de cem vezes no volume de dados. Ambos exploram atalhos específicos do banco de dados
 para recuperação do último valor. O TimescaleDB executa um \texttt{SELECT~...~ORDER~BY~time~DESC~LIMIT~1}
 contra o bloco de hipertabela mais recente via varredura B-tree reversa; como os blocos de
 hipertabela são ordenados por tempo, isso sempre toca a menor quantidade possível de dados.
@@ -224,9 +224,11 @@ O InfluxDB não tem atalho equivalente. Ele deve buscar o final dos blocos de ar
 cada série, e esse custo de busca cresce à medida que mais arquivos TSM se acumulam ao longo
 do tempo de vida do conjunto de dados. A progressão resultante (9,24\,ms na escala pequena,
 21,72\,ms na média, 23,24\,ms na grande) confirma uma relação aproximadamente linear entre
-dados armazenados e custo de último valor. Em uma implantação em produção de longa duração, a
-latência de último valor do InfluxDB continuará crescendo, tornando-o inadequado para
-monitoramento em tempo real de alta frequência à medida que o conjunto de dados envelhece.
+dados armazenados e custo de último valor. Na janela de escalas avaliada, a latência de último valor do InfluxDB mostrou crescimento
+aproximadamente linear com o volume de dados armazenados. Em implantações sem política
+ativa de retenção ou downsampling, esse padrão pode torná-lo desvantajoso para
+monitoramento em tempo real de alta frequência; implantações que apliquem essas políticas
+podem mitigar esse comportamento.
 
 \begin{figure}[ht]
   \centering
@@ -258,7 +260,7 @@ A Tabela~\ref{tab:downsample} mostra a latência de subamostragem por janela de 
 \end{table}
 
 A agregação \texttt{time\_bucket()} do TimescaleDB permanece abaixo de 1\,ms em todo o
-crescimento de 100$\times$ nos dados, a descoberta mais robusta de todo o benchmark. A
+crescimento de cem vezes no volume de dados, resultado que se repete de forma consistente em todas as escalas testadas. A
 chave é que as consultas \texttt{time\_bucket()} varrem uma janela de tempo fixa em vez do
 conjunto de dados completo: uma vez que os blocos relevantes estão quentes em
 \texttt{shared\_buffers}, o custo da consulta é limitado pelo tamanho da janela, não pelo
@@ -287,7 +289,7 @@ escalonamento por escala.
   \centering
   \caption{Latência média de filtro de valor (ms) por escala (ajustado).
     A coluna de razão mostra o crescimento de latência da escala pequena para a grande
-  (dados 100$\times$ maiores).}
+  (dados cem vezes maiores).}
   \label{tab:vfilter}
   \begin{tabular}{lrrrr}
     \hline
@@ -305,13 +307,13 @@ estatísticas de mínimo/máximo por série. Um predicado de valor pode pular bl
 intervalo armazenado não intercepta o limiar do predicado, fornecendo indexação secundária
 leve na camada de armazenamento. Na escala grande, com mais dados por bloco, uma fração maior
 de blocos pode ser eliminada, produzindo a razão de escalonamento sublinear (5,2$\times$ para
-dados 100$\times$ maiores). Esse é o comportamento esperado de uma estrutura de salto baseada
+dados cem vezes maiores). Esse é o comportamento esperado de uma estrutura de salto baseada
 em estatísticas: a razão de eliminação melhora à medida que os blocos ficam mais densos.
 
 O TimescaleDB usa o BRIN (Block Range INdex) do PostgreSQL, que registra valores de
 mínimo/máximo por intervalo de bloco em disco. O BRIN fornece eliminação com granularidade
 mais grosseira do que as estatísticas por bloco do IoTDB e degrada em taxa superlinear
-(21,3$\times$ para dados 100$\times$). Na escala grande, o TimescaleDB fica em média 510\,ms
+(21,3$\times$ para dados cem vezes maiores). Na escala grande, o TimescaleDB fica em média 510\,ms
 por consulta de filtro de valor, uma desvantagem de 26$\times$ relativa ao IoTDB. Essa
 carga de trabalho também leva o TimescaleDB à sua maior utilização de CPU (77\% médio,
 83\% de pico), indicando que o executor de consultas é o gargalo.
@@ -326,7 +328,7 @@ TimescaleDB, mas ainda 10$\times$ pior do que a do IoTDB em termos absolutos na 
   \includegraphics[width=\columnwidth]{figures/pt_br/chart_value_filter_scaling}
   \caption{Latência média de filtro de valor (ms, escala logarítmica) por escala. As
     estatísticas de mínimo/máximo por bloco do IoTDB produzem crescimento sublinear
-    (5,2$\times$ para dados 100$\times$); o índice BRIN do TimescaleDB degrada
+    (5,2$\times$ para dados cem vezes maiores); o índice BRIN do TimescaleDB degrada
   superlinearmente (21,3$\times$).}
   \label{fig:value_filter_scaling}
 \end{figure}
@@ -478,7 +480,7 @@ Entre as tendências multiescala, a progressão de latência de último valor do
 estrutural de escalabilidade. Cada arquivo TSM incremental escrito em disco adiciona à
 profundidade de busca que uma consulta de último valor deve percorrer. TimescaleDB e IoTDB
 mostram latência de último valor plana ou até \textit{decrescente} (devido ao aquecimento JIT
-para IoTDB) ao longo do mesmo crescimento de 100$\times$ nos dados. Qualquer implantação que
+para IoTDB) ao longo do mesmo crescimento de cem vezes no volume de dados. Qualquer implantação que
 acumulará meses ou anos de dados verá o custo de último valor do InfluxDB continuar crescendo,
 enquanto os custos do TimescaleDB e do IoTDB permanecem limitados.
 
@@ -516,9 +518,10 @@ carga de trabalho que requer ordenação de resultados filtrados. O
 \texttt{checkpoint\_completion\_target=0.9} distribui a E/S de checkpoint de forma mais
 uniforme ao longo do intervalo de checkpoint, reduzindo os picos de paralisação de escrita
 que inflam a latência P99 (o P99 do LOTE-GRANDE caiu de 1.069\,ms para 812\,ms). Essas
-melhorias confirmam que as configurações padrão do PostgreSQL são mal calibradas para cargas
-de trabalho intensivas em escrita em hardware moderno e que o ajuste padrão de produção deve
-sempre ser aplicado antes de reportar resultados de desempenho.
+melhorias indicam que as configurações padrão do PostgreSQL são intencionalmente conservadoras
+para garantir funcionamento em hardware de baixo recurso, e que o ajuste via pgtune ou
+ferramenta equivalente deve ser aplicado antes de reportar resultados em hardware de médio e
+alto porte.
 
 \subsubsection{Ganhos do InfluxDB com Isolamento}
 

@@ -5,7 +5,7 @@
 
 This work compared three time-series databases (Apache IoTDB, InfluxDB, and TimescaleDB)
 across nine IoT workload patterns at three data-volume scales, using a fully scripted
-and publicly reproducible benchmark infrastructure built on Docker Compose, Nix, and
+and publicly reproducible benchmark infrastructure built on Docker Compose and
 iot-benchmark~\cite{iotbenchmark}.
 
 Three main findings emerge from the study.
@@ -13,20 +13,22 @@ Three main findings emerge from the study.
 \textbf{No single database dominates across all workloads.} IoTDB achieves 23.6\,M pts/s
 sequential write throughput at large scale (59$\times$ more than TimescaleDB), but
 requires approximately 15\,GB of RAM and offers no relational join support.
-TimescaleDB's \texttt{time\_bucket()} downsampling query stays below 1\,ms across 100$\times$
-data growth, making it the strongest choice for dashboard analytics, while its WAL-based
+TimescaleDB's \texttt{time\_bucket()} downsampling query stays below 1\,ms across a hundredfold
+increase in data volume, making it the strongest choice for dashboard analytics, while its WAL-based
 write path limits bulk-load throughput. InfluxDB occupies a practical middle ground:
 better write throughput than TimescaleDB and better memory efficiency than IoTDB, but
 weaker on threshold-alerting queries and latest-value lookups at scale.
 
 \textbf{Architectural choices determine scaling behavior, not tuning.}
 IoTDB's value-filter advantage grows with dataset size (5.2$\times$ latency increase for
-100$\times$ more data) because its chunk min/max statistics provide better block-level
+a hundredfold increase in data) because its chunk min/max statistics provide better block-level
 pruning as data density increases. InfluxDB's latest-point latency grows linearly with
 stored files because the TSM engine has no in-memory last-value shortcut. TimescaleDB's
 downsampling is genuinely constant-latency across scales because \texttt{time\_bucket()}
-queries scan a fixed time window, not the full dataset. These behaviors are architectural
-invariants that survive changes to hardware, configuration, or database version.
+queries scan a fixed time window, not the full dataset. These behaviors derive from each system's core architectural choices and are therefore
+more stable than gains obtained through configuration tuning. Version changes that alter
+those core choices, such as the columnar engine introduced in InfluxDB~3.0, may shift
+the trade-offs observed here.
 
 \textbf{Methodology critically affects benchmark validity.}
 Two widely-stated conclusions from the initial runs were reversed by isolated, tuned reruns:

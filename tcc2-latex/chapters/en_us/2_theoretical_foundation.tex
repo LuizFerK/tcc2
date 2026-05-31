@@ -15,7 +15,7 @@ to the relationships between those entities, such as student enrollments in spec
 provide a way of storing and retrieving information that is both convenient and efficient.
 
 The management of this data is performed by a Database Management System (DBMS), which is
-software designed to assist in the maintenance and use of large data collections~\cite{Ramakrishnan2003}.
+software designed to assist in the maintenance and use of large data collections~\citep{Ramakrishnan2003}.
 The need for such systems has grown rapidly, as the alternative of storing data in flat files
 and writing application-specific management code produces solutions that are not transferable
 across applications and offer no guarantees of integrity or concurrent access safety.
@@ -35,7 +35,7 @@ and support for concurrent access and crash recovery.
 
 The relational model, proposed by Codd in 1970, is simple and elegant: a database is viewed
 as a collection of relations (tables with rows and columns), a representation so intuitive
-that even non-specialist users can understand the stored content~\cite{Ramakrishnan2003}.
+that even non-specialist users can understand the stored content~\citep{Ramakrishnan2003}.
 The structure of each relation consists of a schema (field names and their domains) and an
 instance (the set of tuples, or records). A key property is that each relation is a set of
 unique tuples, guaranteeing no duplicate records. Integrity constraints, defined as conditions specified
@@ -51,24 +51,23 @@ high-level representation, which is then translated into a relational schema.
 
 \subsection{Distributed Databases}
 
-Distributed databases (DDBs) represent the convergence of two seemingly opposing technologies:
-database systems and computer networks~\cite{Ozsu2011}. While traditional database systems
-promote centralization for control and integrity, computer networks encourage distribution and
-decentralization. The technology of DDBs synthesizes these concepts, demonstrating that data
-integration does not necessarily imply physical centralization.
+Distributed databases (DDBs) are the convergence of database systems technology and computer networks~\citep{Ozsu2011}. Database systems provide the mechanisms for data storage, querying, and integrity control,
+while computer networks enable physical distribution across multiple nodes. DDB technology
+combines these two fields, demonstrating that data integration does not necessarily imply
+physical centralization.
 
 For~\cite{Silberschatz2020}, a distributed database system is composed of multiple instances
 with local databases, each capable of processing local transactions, while also executing
 global transactions that access data across multiple sites, requiring inter-site communication.
 
 A distributed database is defined as a collection of multiple logically inter-related databases
-distributed over a computer network~\cite{Ozsu2011}. The distributed DBMS (DDBMS) is the
+distributed over a computer network~\citep{Ozsu2011}. The distributed DBMS (DDBMS) is the
 software that manages this distributed database, making the distribution transparent to users.
 A DDB is not simply a collection of files stored on different network nodes; it is a structured
 system with a defined schema accessible through a common interface.
 
 The architecture of a DDBMS can take several forms, including client/server, peer-to-peer,
-and multi-database systems~\cite{Ozsu2011}. In client/server systems, the functions are
+and multi-database systems~\citep{Ozsu2011}. In client/server systems, the functions are
 divided between clients (managing the user interface) and servers (responsible for data
 management). In peer-to-peer systems, all machines have full DBMS functionality and can
 communicate directly. Multi-database systems deal with integrating heterogeneous and
@@ -93,7 +92,7 @@ optimized for time-interval-based queries, offering superior performance for tha
 
 Weather records, economic indicators, and patient health metrics are all time series data.
 Time series data also includes server metrics, application performance monitoring, network
-data, sensor data, events, clicks, and many other types of analytical data~\cite{InfluxDataTimeSeries}.
+data, sensor data, events, clicks, and many other types of analytical data~\citep{InfluxDataTimeSeries}.
 Figure~\ref{fig:temporal_data} illustrates a time series of meteorological measurements.
 
 \begin{figure}[ht]
@@ -108,12 +107,12 @@ Figure~\ref{fig:temporal_data} illustrates a time series of meteorological measu
   \centering
   \includegraphics[width=\columnwidth]{figures/en_us/registro_temporal}
   \caption{Example of a TSDB table representing the weather time series.
-  Each row corresponds to one timestamped measurement.}
+  Each row corresponds to one time-indexed measurement.}
   \label{fig:tsdb_record}
 \end{figure}
 
 Figure~\ref{fig:tsdb_record} shows the corresponding TSDB table, where each row is a
-timestamped record capturing atmospheric pressure, temperature, humidity, and other readings
+time-indexed record capturing atmospheric pressure, temperature, humidity, and other readings
 at a specific moment.
 
 As explained by~\cite{Ozsu2011}, a time series normally consists only of numerical values,
@@ -133,7 +132,7 @@ can reveal trends and patterns not apparent in point-in-time measurements.
 
 In the modern context, TSDBs face new challenges due to the volume, velocity, and variety of
 generated data. What used to be collected in 10 minutes for some very active systems is now
-generated every second~\cite{Dunning2014}. This explosion in data volume demands new approaches
+generated every second~\citep{Dunning2014}. This explosion in data volume demands new approaches
 to storage and access, making NoSQL databases particularly suitable for this scale. For
 time-based queries at very large scales, these accesses can be implemented as large, contiguous
 scans that are highly efficient if data is stored appropriately in a time series database.
@@ -144,13 +143,13 @@ main approaches to time series storage: (1) wide tables that store data point-by
 a memory cache, which can achieve ingestion rates up to 1{,}000$\times$ faster than
 point-by-point approaches. TSDBs store multiple time series in such a way that queries
 retrieving data from one or a few series for a specific time interval are particularly
-efficient~\cite{Dunning2014}. This efficiency is achieved through storage strategies that group
+efficient~\citep{Dunning2014}. This efficiency is achieved through storage strategies that group
 temporally proximate data physically, enabling efficient sequential scan operations.
 
 Applications of TSDBs are diverse and expanding. In the financial sector, the speed of trading
-and the need for extremely low latency make high-performance TSDBs essential~\cite{Dunning2014}.
+and the need for extremely low latency make high-performance TSDBs essential~\citep{Dunning2014}.
 In the IoT context, TSDBs occupy a central position in the sensor-to-insight data flow that is
-rapidly changing how we perceive and understand the world~\cite{Dunning2014}.
+rapidly changing how we perceive and understand the world~\citep{Dunning2014}.
 
 \subsubsection{Database Architectures for Time Series}
 
@@ -167,7 +166,7 @@ write throughput. The native ingestion interface is a binary Thrift RPC protocol
 (SESSION\_BY\_TABLET), which submits typed columnar tablets directly into the write buffer
 with minimal overhead. The min/max statistics stored per chunk enable early pruning of
 non-matching blocks during value-predicate queries, a property that becomes increasingly
-advantageous as the dataset grows~\cite{wang2023iotdb}.
+advantageous as the dataset grows~\citep{wang2023iotdb}.
 
 \textbf{InfluxDB}~\cite{naqvi2017influxdb} uses a Time-Structured Merge Tree (TSM) storage
 engine, which organizes data into compressed time-ordered blocks. Like the LSM tree, TSM
@@ -175,9 +174,9 @@ buffers incoming writes in memory (the TSM cache) and periodically compacts them
 immutable on-disk files. Data ingestion is performed via an HTTP line-protocol API, where
 clients POST line-protocol text representing measurements. Queries use the Flux language.
 The TSM engine maintains a Time Series Index (TSI) for series lookup. InfluxDB's in-process
-memory is dominated by the TSM cache, the series index, and Go runtime overhead~\cite{naqvi2017influxdb}.
+memory is dominated by the TSM cache, the series index, and Go runtime overhead~\citep{naqvi2017influxdb}.
 
-\textbf{TimescaleDB} extends PostgreSQL with time-series optimizations~\cite{Ramakrishnan2003}.
+\textbf{TimescaleDB} extends PostgreSQL with time-series optimizations~\citep{Ramakrishnan2003}.
 Its primary data structure is the \textit{hypertable}: a logical table that is automatically
 partitioned into physical \textit{chunks} by time interval. Queries that specify a time range
 can prune chunks automatically, touching only the relevant partitions. The \texttt{time\_bucket()}
@@ -219,7 +218,7 @@ the simple average of throughputs can be misleading. The proper method is to cal
 total time for a mixed workload and derive the average throughput from that, or to use the
 harmonic mean, which better reflects the reality when there are different types of operations.
 
-The benchmark literature categorizes its instruments in several groups~\cite{Ramakrishnan2003}.
+The benchmark literature categorizes its instruments in several groups~\citep{Ramakrishnan2003}.
 \textit{Online Transaction Processing} benchmarks (TPC-A, TPC-B, TPC-C) define standard
 measures for transactions per second and cost per transaction. TPC-C, the most widely used,
 models a complex warehouse environment with five transaction types, exercising a much broader
@@ -238,8 +237,8 @@ do not match the actual workload closely enough, custom benchmarks that adapt or
 standard tasks with more representative operations should be considered.
 
 Reproducibility is an essential but often neglected property of database benchmarks.
-As demonstrated in the related works reviewed in this study, only a minority of published
-comparative evaluations provide the scripts and exact configurations needed for independent
-replication~\cite{pereira2023mulletbench}. This limits the ability to validate results,
+Among the five performance studies reviewed in this work, only one provides the scripts
+and exact configurations needed for independent
+replication~\citep{pereira2023mulletbench}. This limits the ability to validate results,
 compare findings across studies, and build on prior work, a gap this study directly
 addresses through its fully scripted and publicly available benchmark infrastructure.

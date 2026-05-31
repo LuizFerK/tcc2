@@ -6,7 +6,7 @@
 Este trabalho comparou três bancos de dados de séries temporais (Apache IoTDB, InfluxDB e
 TimescaleDB) em nove padrões de carga de trabalho IoT em três escalas de volume de dados,
 utilizando uma infraestrutura de benchmark totalmente automatizada e publicamente reprodutível,
-construída sobre Docker Compose, Nix e iot-benchmark~\cite{iotbenchmark}.
+construída sobre Docker Compose e iot-benchmark~\cite{iotbenchmark}.
 
 Três descobertas principais emergem do estudo.
 
@@ -14,7 +14,7 @@ Três descobertas principais emergem do estudo.
 23,6\,M pts/s de vazão de escrita sequencial na escala grande (59$\times$ mais que o
 TimescaleDB), mas requer aproximadamente 15\,GB de RAM e não oferece suporte a junções
 relacionais. A consulta de subamostragem \texttt{time\_bucket()} do TimescaleDB permanece
-abaixo de 1\,ms em todo o crescimento de 100$\times$ nos dados, tornando-o a escolha mais
+abaixo de 1\,ms em todo o crescimento de cem vezes no volume de dados, tornando-o a escolha mais
 forte para análises em painel, enquanto seu caminho de escrita baseado em WAL limita a vazão
 de carregamento em lote. O InfluxDB ocupa um meio-termo prático: melhor vazão de escrita do
 que o TimescaleDB e melhor eficiência de memória do que o IoTDB, mas mais fraco em consultas
@@ -22,14 +22,16 @@ de alertas por limite e consultas de último valor em escala.
 
 \textbf{As escolhas arquiteturais determinam o comportamento de escalonamento, não o ajuste.}
 A vantagem de filtro de valor do IoTDB cresce com o tamanho do conjunto de dados
-(crescimento de latência de 5,2$\times$ para dados 100$\times$ maiores) porque suas
+(crescimento de latência de 5,2$\times$ para dados cem vezes maiores) porque suas
 estatísticas de mínimo/máximo por bloco fornecem melhor eliminação no nível de bloco à medida
 que a densidade de dados aumenta. A latência de último valor do InfluxDB cresce linearmente
 com os arquivos armazenados porque o motor TSM não tem atalho de último valor em memória.
 A subamostragem do TimescaleDB é genuinamente de latência constante por escalas porque as
 consultas \texttt{time\_bucket()} varrem uma janela de tempo fixa, não o conjunto de dados
-completo. Esses comportamentos são invariantes arquiteturais que sobrevivem a mudanças de
-hardware, configuração ou versão do banco de dados.
+completo. Esses comportamentos derivam de escolhas arquiteturais centrais de cada sistema e são,
+portanto, mais estáveis do que ganhos obtidos por ajuste de configuração. Mudanças de
+versão que alterem essas escolhas centrais, como o novo motor colunar do InfluxDB~3.0,
+podem modificar os compromissos observados.
 
 \textbf{A metodologia afeta criticamente a validade do benchmark.}
 Duas conclusões amplamente declaradas das execuções iniciais foram revertidas por reexecuções

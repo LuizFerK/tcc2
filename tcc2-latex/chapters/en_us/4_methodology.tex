@@ -13,9 +13,9 @@ aggregate rankings to explain \textit{why} each database performs as it does.
 A central design objective beyond performance measurement is \textit{reproducibility}.
 The comparative literature reviewed in this work reveals a systemic gap: of the five recent
 TSDB performance studies analyzed, only one published sufficient scripts and configurations
-for independent replication~\cite{pereira2023mulletbench}. The others either omitted
+for independent replication~\citep{pereira2023mulletbench}. The others either omitted
 configurations entirely, described their setups in prose too vague to follow mechanically,
-or used toolchains that require institutional access~\cite{shah2022performance,naqvi2017influxdb,
+or used toolchains that require institutional access~\citep{shah2022performance,naqvi2017influxdb,
 lima2024avaliando,wang2023iotdb}. This work treats reproducibility as a first-class output:
 every component needed to replicate the results is version-pinned and publicly available
 alongside this paper.
@@ -26,7 +26,7 @@ The three databases were selected to represent distinct architectural approaches
 time-series storage, each identified as a leading system in the reviewed literature.
 
 \textbf{InfluxDB 2.7} is the de facto reference standard in TSDB comparative research,
-appearing in four of the five performance studies reviewed~\cite{naqvi2017influxdb,
+appearing in four of the five performance studies reviewed~\citep{naqvi2017influxdb,
 shah2022performance,lima2024avaliando,wang2023iotdb}. It uses a TSM (Time-Structured Merge
 Tree) storage engine that organizes data into compressed time-ordered blocks. Ingestion
 occurs via an HTTP line-protocol API; analytics queries use the Flux expression language.
@@ -34,7 +34,7 @@ InfluxDB's ubiquity in prior benchmarks makes it an essential comparison anchor:
 study that omits it loses comparability with the existing literature.
 
 \textbf{Apache IoTDB 1.3.0}~\cite{wang2023iotdb} emerged as the performance leader in
-the two most recent comparative studies~\cite{pereira2023mulletbench,wang2023iotdb},
+the two most recent comparative studies~\citep{pereira2023mulletbench,wang2023iotdb},
 representing a shift from the InfluxDB dominance reported in older benchmarks.
 Developed at Tsinghua University specifically for industrial IoT, it uses a custom columnar
 file format (TsFile) and a binary Thrift RPC protocol (SESSION\_BY\_TABLET). Write ingestion
@@ -50,18 +50,20 @@ with WAL-based durability, MVCC concurrency control, B-tree indexes, and complet
 compatibility. For organisations with existing PostgreSQL infrastructure, or for applications
 requiring joins between time-series and relational data, it provides a path to time-series
 capability without abandoning the relational ecosystem. It appears in three of the five
-reviewed benchmarks~\cite{shah2022performance,lima2024avaliando,wang2023iotdb}.
+reviewed benchmarks~\citep{shah2022performance,lima2024avaliando,wang2023iotdb}.
 
 Plain PostgreSQL without the TimescaleDB extension was explicitly excluded. TimescaleDB
-supersedes it for this domain: any conclusion drawn from TimescaleDB is directly applicable
-to a PostgreSQL deployment, and including both would duplicate tests without producing
-additional insight.
+tends to outperform plain PostgreSQL in this domain; including both would duplicate tests.
+Conclusions about general PostgreSQL configuration, such as \texttt{shared\_buffers}
+sizing, are transferable, but results that depend on TimescaleDB-specific optimizations,
+such as hypertables and chunk-level min/max pruning, do not apply directly to plain
+PostgreSQL without the extension.
 
 \subsection{Benchmark Tool}
 \label{sec:benchmark-tool}
 
 The workload generator is \textit{iot-benchmark}~\cite{iotbenchmark}, developed at Tsinghua
-University, which ships purpose-built Java clients for all three databases under evaluation.
+University, which ships purpose-built benchmark clients for all three databases under evaluation.
 This native multi-database support means each workload is expressed in the correct protocol
 for each target: the Thrift SESSION\_BY\_TABLET interface for IoTDB, the HTTP line-protocol
 for InfluxDB, and a JDBC connection for TimescaleDB. A consistent, parameterized interface
@@ -156,7 +158,7 @@ dataset size. Table~\ref{tab:scales} summarizes the parameters.
 \begin{table}[ht]
   \centering
   \caption{Benchmark scale parameters. All scales use a default batch size of 100 rows per
-  request. Large scale contains ${\sim}100\times$ more data than small.}
+  request. Large scale contains approximately one hundred times more data than small.}
   \label{tab:scales}
   \begin{tabular}{lrrrrr}
     \hline
@@ -169,7 +171,7 @@ dataset size. Table~\ref{tab:scales} summarizes the parameters.
   \end{tabular}
 \end{table}
 
-Large scale contains approximately 20$\times$ more data than medium and 100$\times$ more
+Large scale contains approximately 20$\times$ more data than medium and one hundred times more
 than small, driven by both a higher loop count and an expanded topology (10 clients
 $\times$ 50 devices $\times$ 20 sensors versus 5~$\times$~10~$\times$~10). Multi-scale
 measurement is essential because several key characteristics (JVM JIT compilation
@@ -189,16 +191,18 @@ versions: \texttt{apache/iotdb:1.3.0-standalone}, \texttt{influxdb:2.7-alpine}, 
 after the initial runs revealed cross-database resource contention artefacts, gives each
 database exclusive access to the host's CPU, memory bandwidth, and I/O.
 
-\textbf{Nix flake}~\cite{nixos} provides a declarative, lock-file-pinned development
-environment. Running \texttt{nix~develop} drops into a shell with exactly-specified versions
-of Java~17, Maven, Python~3, and Docker tooling. Running \texttt{nix~run~.\#build} compiles
-all three Java benchmark clients in a single step. Every transitive build dependency is
-recorded in the flake lock file, eliminating the environment-variation failures that
-typically plague benchmark replications.
+\textbf{Nix flake}~\cite{nixos} is an optional tool that provides a declarative,
+lock-file-pinned development environment. Running \texttt{nix~develop} drops into a shell
+with exactly-specified versions of Java~17, Maven, Python~3, and Docker tooling. Running
+\texttt{nix~run~.\#build} compiles all three benchmark clients in a single step. Every
+transitive build dependency is recorded in the flake lock file, eliminating the
+environment-variation failures that typically plague benchmark replications. Users without
+Nix can replicate the experiments by manually installing the listed dependencies (Java~17,
+Maven, Python~3, and Docker) on any compatible Linux host.
 
 \textbf{Python CLI} (\texttt{benchmark.py}) orchestrates the complete benchmark workflow
 programmatically. It starts the target container, writes the correct parameters to
-the Java client's \texttt{conf/config.properties}, invokes the Java client, polls
+the benchmark client's \texttt{conf/config.properties}, invokes the client, polls
 \texttt{docker~stats} at one-second intervals to collect CPU and memory samples, and appends
 a structured result row to the output table after each test. A complete nine-test,
 three-database run at any scale reduces to:

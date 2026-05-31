@@ -32,19 +32,19 @@
 anchorcolor=darkblue,citecolor=darkblue}
 
 \jid{ROCS}
-\jtitle{SBC Computing Reviews, 202X, XX:1}
+\jtitle{SBC Computing Reviews, 2026, XX:1}
 \issn{2966-3938}
-\doi{10.5753/rocs.202X.XXXXXX}
+\doi{10.5753/rocs.2026.XXXXXX}
 \copyrightstatement{Este trabalho está licenciado sob a Licença Creative Commons Atribuição 4.0 Internacional}
-\jyear{202X}
+\jyear{2026}
 
 \category{Revisão}
 
-\title[Comparação de bancos de dados de séries temporais]{Comparação de bancos de dados de séries temporais}
+\title[Um Benchmark Reprodutível de Apache IoTDB, InfluxDB e TimescaleDB para Cargas de Trabalho IoT]{Um Benchmark Reprodutível de Apache IoTDB, InfluxDB e TimescaleDB para Cargas de Trabalho IoT}
 
 %THE ORCID IS MANDATORY FOR EACH AUTHOR IN ROCS
-\author[Klein et al. 202X]{
-  \affil{\textbf{Luiz Fernando Klein}~\orcidlink{0000-0000-0000-0000}~\textcolor{blue}{\faEnvelope}~~[{Universidade Federal}~|\href{mailto: ...}{~{\textit{luizkleinfernando@gmail.com}}}~]}
+\author[Klein 2026]{
+  \affil{\textbf{Luiz Fernando Klein}~\orcidlink{0009-0001-8949-3248}~\textcolor{blue}{\faEnvelope}~~[{Universidade Federal da Fronteira Sul - UFFS}~|\href{mailto: ...}{~{\textit{luizkleinfernando@gmail.com}}}~]}
 }
 
 \begin{document}
@@ -54,24 +54,24 @@ anchorcolor=darkblue,citecolor=darkblue}
   \maketitle
 
   \begin{mail}
-    Instituto de ..., Universidade ..., Endereço, Cidade, Estado, CEP, Brasil.
+    Curso de Ciência da Computação, Universidade Federal da Fronteira Sul -- UFFS, Rodovia SC 484, Km 02, Chapecó, SC, 89815-899, Brasil.
   \end{mail}
 
   \begin{abstract-pt}
     O rápido crescimento das implantações de Internet das Coisas gerou volumes sem precedentes de
-    dados de sensores com carimbo de tempo, expondo as limitações dos bancos de dados tradicionais e
+    dados de sensores indexados por tempo, expondo as limitações dos bancos de dados tradicionais e
     impulsionando a adoção de Bancos de Dados de Séries Temporais (BDSTs) especializados. Apesar do
     crescente interesse, a maioria dos benchmarks de BDSTs publicados carece de scripts e
     configurações suficientes para replicação independente.
 
     Este artigo apresenta um benchmark controlado e reprodutível comparando Apache IoTDB~1.3.0,
     InfluxDB~2.7 e TimescaleDB (PostgreSQL~15) em nove tipos de carga de trabalho IoT em três
-    escalas de volume de dados que abrangem 100$\times$ no tamanho dos dados, utilizando uma
-    infraestrutura totalmente automatizada construída sobre Docker Compose, Nix e iot-benchmark.
+    escalas de volume de dados com variação de cem vezes no tamanho dos dados, utilizando uma
+    infraestrutura totalmente automatizada construída sobre Docker Compose e iot-benchmark.
 
     Os resultados mostram que nenhum banco de dados domina todas as cargas de trabalho. O IoTDB
     lidera em vazão de escrita (23,6\,M\,pts/s na escala grande) e escalonamento de filtro de valor
-    (crescimento de latência de 5,2$\times$ para dados 100$\times$ maiores). O TimescaleDB fornece
+    (crescimento de latência de 5,2$\times$ para dados cem vezes maiores). O TimescaleDB fornece
     subamostragem abaixo de um milissegundo em todas as escalas e as consultas de último valor mais
     rápidas, com suporte completo a SQL. O InfluxDB oferece um meio-termo equilibrado com menores
     requisitos de memória. Uma descoberta fundamental é que ambientes de benchmark com recursos
@@ -82,18 +82,18 @@ anchorcolor=darkblue,citecolor=darkblue}
 
   \begin{abstract-en}
     The rapid growth of Internet of Things deployments has generated unprecedented volumes of
-    time-stamped sensor data, exposing the limitations of traditional databases and driving the
+    time-indexed sensor data, exposing the limitations of traditional databases and driving the
     adoption of specialized Time Series Databases (TSDBs). Despite growing interest, most published
     TSDB benchmarks lack sufficient scripts and configurations for independent replication.
 
     This paper presents a controlled, reproducible benchmark comparing Apache IoTDB~1.3.0,
     InfluxDB~2.7, and TimescaleDB (PostgreSQL~15) across nine IoT workload types at three
-    data-volume scales spanning 100$\times$ in data size, using a fully scripted infrastructure
-    built on Docker Compose, Nix, and iot-benchmark.
+    data-volume scales spanning a hundredfold range in data size, using a fully scripted infrastructure
+    built on Docker Compose and iot-benchmark.
 
     Results show that no single database dominates all workloads. IoTDB leads on write throughput
     (23.6\,M\,pts/s at large scale) and value-filter scaling (5.2$\times$ latency growth for
-    100$\times$ data). TimescaleDB provides sub-millisecond downsampling across all scales and the
+    a hundredfold increase in data). TimescaleDB provides sub-millisecond downsampling across all scales and the
     fastest latest-point lookups, backed by full SQL compatibility. InfluxDB offers a balanced
     middle ground with lower memory requirements. A key finding is that shared-resource benchmark
     environments produce misleading results: two conclusions from the initial runs were reversed
@@ -115,7 +115,7 @@ anchorcolor=darkblue,citecolor=darkblue}
 
 % Capítulos
 \input{chapters/pt_br/1_introducao}
-\input{chapters/pt_br/2_fundamento_teorico}
+\input{chapters/pt_br/2_fundamentacao_teorica}
 \input{chapters/pt_br/3_trabalhos_relacionados}
 \input{chapters/pt_br/4_metodologia}
 \input{chapters/pt_br/5_experimentos}
@@ -133,8 +133,8 @@ anchorcolor=darkblue,citecolor=darkblue}
   \end{interests}
 
   \begin{materials}
-    Os scripts de benchmark, as configurações do Docker Compose, o ambiente Nix flake e os conjuntos de
-    dados de resultados criados e utilizados neste estudo estão disponíveis publicamente em
+    Os scripts de benchmark, as configurações do Docker Compose, o ambiente de construção declarativo
+    (Nix flake) e os conjuntos de dados de resultados criados e utilizados neste estudo estão disponíveis publicamente em
     \url{https://github.com/LuizFerK/tcc2}.
   \end{materials}
 

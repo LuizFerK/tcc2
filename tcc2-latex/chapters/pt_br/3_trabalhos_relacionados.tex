@@ -40,7 +40,7 @@ Cinco trabalhos no formato de benchmarks controlados ou comparações em cenári
 selecionados para análise detalhada.
 
 \cite{lima2024avaliando} empregaram testes de inserção (variando de 1.000 a 5 milhões de
-registros) e consultas de agregação com dados sintéticos (medições de carimbo de tempo,
+registros) e consultas de agregação com dados sintéticos (medições indexadas por tempo,
 localização, temperatura e umidade) para comparar o desempenho de SGBDs utilizando o Apache
 JMeter. A mesma estrutura de dados foi replicada em todos os bancos de dados. Os testes foram
 realizados em um ambiente baseado em Docker em uma máquina com AMD Ryzen 5 4500 (6 núcleos),
@@ -128,9 +128,11 @@ servindo como o ponto de referência de facto para comparações de BDSTs, mesmo
 onde outro sistema é o assunto principal, como em~\cite{wang2023iotdb}. A presença do
 TimescaleDB em três dos cinco estudos reflete sua crescente relevância como alternativa
 compatível com SQL. A tendência mais notável é a emergência do Apache IoTDB: aparecendo apenas
-nos dois estudos mais recentes (2023), ele lidera em ambos~\cite{pereira2023mulletbench,wang2023iotdb},
-sugerindo melhorias significativas de desempenho nas versões recentes ou um crescente
-reconhecimento de seus pontos fortes para cargas de trabalho orientadas a IoT.
+nos dois estudos mais recentes (2023), ele lidera em ambos~\citep{pereira2023mulletbench,wang2023iotdb},
+sugerindo melhorias de desempenho nas versões recentes, viés de seleção dos benchmarks
+mais recentes para cargas de trabalho IoT, ou um crescente reconhecimento de seus pontos
+fortes para esse domínio; os dados disponíveis não permitem distinguir entre essas
+explicações.
 
 \textbf{Reprodutibilidade.} Esta é a lacuna metodológica mais significativa na literatura
 revisada. Dos cinco estudos de desempenho, apenas um (\cite{pereira2023mulletbench})
@@ -144,16 +146,16 @@ desempenho à arquitetura do banco de dados em vez de às condições experiment
 \textbf{Conjuntos de dados.} Todos os cinco estudos utilizam conjuntos de dados sintéticos,
 refletindo a necessidade de dados controlados e escaláveis em volume. Três estudos incluem
 adicionalmente conjuntos de dados reais, como dados de táxi em NYC, leituras de sensores IoT e
-dados industriais de veículos~\cite{shah2022performance,naqvi2017influxdb,wang2023iotdb},
+dados industriais de veículos~\citep{shah2022performance,naqvi2017influxdb,wang2023iotdb},
 proporcionando relevância prática ao lado do controle experimental. O TSBS (Time Series
 Benchmark Suite) aparece nos estudos mais recentes, sugerindo uma tendência potencial de
 padronização na comunidade.
 
 \textbf{Configurações de hardware.} Os ambientes testados variam consideravelmente: os
 processadores variam de Intel~i3 a Intel~i7, a RAM de 8\,GB a 32\,GB (mais nuvem com 256\,GB
-em um caso~\cite{wang2023iotdb}), e o armazenamento de SATA SSD a NVMe e HDD. A maioria dos
+em um caso~\citep{wang2023iotdb}), e o armazenamento de SATA SSD a NVMe e HDD. A maioria dos
 testes utilizou máquinas de médio porte, consistente com foco em cenários de implantação
-realistas. A inclusão de testes em nuvem em estudos mais recentes~\cite{pereira2023mulletbench,wang2023iotdb}
+realistas. A inclusão de testes em nuvem em estudos mais recentes~\citep{pereira2023mulletbench,wang2023iotdb}
 reflete o crescente interesse em arquiteturas borda-nuvem.
 
 \textbf{Tendências de resultados.} O InfluxDB lidera em três dos cinco estudos, todos de

@@ -120,9 +120,9 @@ facto reference point for TSDB comparisons, even in works where another system i
 primary subject, as in~\cite{wang2023iotdb}. The presence of TimescaleDB in three of five
 studies reflects its growing relevance as a SQL-compatible alternative. The most notable
 trend is the emergence of Apache IoTDB: appearing only in the two most recent studies
-(2023), it leads both of them~\cite{pereira2023mulletbench,wang2023iotdb}, suggesting
-either significant performance improvements in recent versions or a growing recognition of
-its strengths for IoT-oriented workloads.
+(2023), it leads both of them~\citep{pereira2023mulletbench,wang2023iotdb}, suggesting performance improvements in recent versions, selection bias in recent benchmarks
+toward IoT workloads, or growing recognition of its strengths for this domain; the
+available data do not allow distinguishing among these explanations.
 
 \textbf{Reproducibility.} This is the most significant methodological gap in the reviewed
 literature. Of five performance studies, only one, \cite{pereira2023mulletbench},
@@ -135,16 +135,16 @@ differences to database architecture rather than experimental conditions.
 
 \textbf{Datasets.} All five studies use synthetic datasets, reflecting the need for
 controlled, volume-scalable data. Three studies additionally include real datasets such as
-NYC Taxi data, IoT sensor readings, and industrial vehicle data~\cite{shah2022performance,
+NYC Taxi data, IoT sensor readings, and industrial vehicle data~\citep{shah2022performance,
 naqvi2017influxdb,wang2023iotdb}, providing practical relevance alongside experimental
 control. The TSBS (Time Series Benchmark Suite) appears in the most recent studies,
 suggesting a potential standardization trend in the community.
 
 \textbf{Hardware configurations.} Tested environments vary considerably: processors range
 from Intel~i3 to Intel~i7, RAM from 8\,GB to 32\,GB (plus cloud with 256\,GB in one
-case~\cite{wang2023iotdb}), and storage from SATA SSD to NVMe and HDD. The majority of
+case~\citep{wang2023iotdb}), and storage from SATA SSD to NVMe and HDD. The majority of
 tests used mid-range machines, consistent with a focus on realistic deployment scenarios.
-The inclusion of cloud testing in more recent studies~\cite{pereira2023mulletbench,wang2023iotdb}
+The inclusion of cloud testing in more recent studies~\citep{pereira2023mulletbench,wang2023iotdb}
 reflects growing interest in edge-to-cloud architectures.
 
 \textbf{Outcome trends.} InfluxDB leads in three of five studies, all from 2017--2022.
