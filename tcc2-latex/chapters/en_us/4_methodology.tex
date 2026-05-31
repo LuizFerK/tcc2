@@ -49,8 +49,8 @@ for downsampling, and optional chunk-level compression. It retains the full rela
 with WAL-based durability, MVCC concurrency control, B-tree indexes, and complete SQL
 compatibility. For organisations with existing PostgreSQL infrastructure, or for applications
 requiring joins between time-series and relational data, it provides a path to time-series
-capability without abandoning the relational ecosystem. It appears in three of the five
-reviewed benchmarks~\citep{shah2022performance,lima2024avaliando,wang2023iotdb}.
+capability without abandoning the relational ecosystem. It appears in four of the six
+reviewed benchmarks~\citep{shah2022performance,lima2024avaliando,wang2023iotdb,grzesik2020comparative}.
 
 Plain PostgreSQL without the TimescaleDB extension was explicitly excluded. TimescaleDB
 tends to outperform plain PostgreSQL in this domain; including both would duplicate tests.
@@ -155,7 +155,7 @@ All read tests operate on the dataset loaded by the preceding baseline \texttt{w
 Three data-volume scales are defined to expose how performance characteristics evolve with
 dataset size. Table~\ref{tab:scales} summarizes the parameters.
 
-\begin{table}[ht]
+\begin{table*}[t]
   \centering
   \caption{Benchmark scale parameters. All scales use a default batch size of 100 rows per
   request. Large scale contains approximately one hundred times more data than small.}
@@ -169,7 +169,7 @@ dataset size. Table~\ref{tab:scales} summarizes the parameters.
     Large  & 10 & 50 & 20 & 5{,}000 & ${\sim}$2 h \\
     \hline
   \end{tabular}
-\end{table}
+\end{table*}
 
 Large scale contains approximately 20$\times$ more data than medium and one hundred times more
 than small, driven by both a higher loop count and an expanded topology (10 clients
@@ -220,7 +220,7 @@ dataset from scratch.
 
 Table~\ref{tab:metrics} describes the performance metrics collected for each run.
 
-\begin{table}[ht]
+\begin{table*}[t]
   \centering
   \caption{Performance metrics collected per benchmark run.}
   \label{tab:metrics}
@@ -236,7 +236,7 @@ Table~\ref{tab:metrics} describes the performance metrics collected for each run
     Wall-clock time (s)   & Run duration \\
     \hline
   \end{tabular}
-\end{table}
+\end{table*}
 
 For write tests, throughput measures data points ingested per second. For read tests,
 throughput sums point counts returned across all active query types. Because different query
@@ -258,7 +258,7 @@ before re-running all scales:
 \begin{enumerate}
   \item \textbf{Sequential container lifecycle.} The original setup started all three
     database containers simultaneously. Although each test ran on one database at a time, idle
-    containers competed for OS page cache and I/O bandwidth. TimescaleDB accumulated several
+    containers competed for OS page cache and I/O bandwidth~\citep{shapira2016pitfalls}. TimescaleDB accumulated several
     gigabytes of page cache during IoTDB's write sessions, producing deeply misleading memory
     measurements. IoTDB's JVM pre-allocated its maximum heap during idle time for the same reason.
     The corrected setup starts each container immediately before its tests and stops it

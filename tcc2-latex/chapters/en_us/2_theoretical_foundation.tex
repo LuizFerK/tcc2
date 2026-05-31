@@ -157,11 +157,11 @@ The three databases compared in this work represent three distinct storage archi
 time series data, each with different trade-offs between write throughput, read latency, and
 resource consumption.
 
-\textbf{Apache IoTDB}~\cite{wang2023iotdb} is purpose-built for the IoT domain. It uses TsFile,
+\textbf{Apache IoTDB}~\cite{wang2023iotdb} is purpose-built for the IoT domain. It uses TsFile~\citep{zhao2024tsfile},
 a custom columnar file format that stores data in sorted chunks with per-chunk min/max statistics.
 Writes are first absorbed into an in-memory buffer (memtable) managed by the JVM, and are
 flushed to TsFile segments asynchronously. This deferred write strategy is similar to a
-Log-Structured Merge Tree (LSM) approach, trading strict durability guarantees for high
+Log-Structured Merge Tree (LSM) approach~\citep{oneil1996lsm}, trading strict durability guarantees for high
 write throughput. The native ingestion interface is a binary Thrift RPC protocol
 (SESSION\_BY\_TABLET), which submits typed columnar tablets directly into the write buffer
 with minimal overhead. The min/max statistics stored per chunk enable early pruning of
@@ -176,7 +176,7 @@ clients POST line-protocol text representing measurements. Queries use the Flux 
 The TSM engine maintains a Time Series Index (TSI) for series lookup. InfluxDB's in-process
 memory is dominated by the TSM cache, the series index, and Go runtime overhead~\citep{naqvi2017influxdb}.
 
-\textbf{TimescaleDB} extends PostgreSQL with time-series optimizations~\citep{Ramakrishnan2003}.
+\textbf{TimescaleDB} extends PostgreSQL with time-series optimizations~\citep{timescaledb}.
 Its primary data structure is the \textit{hypertable}: a logical table that is automatically
 partitioned into physical \textit{chunks} by time interval. Queries that specify a time range
 can prune chunks automatically, touching only the relevant partitions. The \texttt{time\_bucket()}
@@ -237,8 +237,11 @@ do not match the actual workload closely enough, custom benchmarks that adapt or
 standard tasks with more representative operations should be considered.
 
 Reproducibility is an essential but often neglected property of database benchmarks.
-Among the five performance studies reviewed in this work, only one provides the scripts
+Among the six performance studies reviewed in this work, only one provides the scripts
 and exact configurations needed for independent
 replication~\citep{pereira2023mulletbench}. This limits the ability to validate results,
 compare findings across studies, and build on prior work, a gap this study directly
 addresses through its fully scripted and publicly available benchmark infrastructure.
+Beyond code sharing, resource isolation between benchmark systems is equally critical:
+running multiple database engines on shared hardware introduces page-cache and I/O
+contention artefacts that can reverse reported conclusions~\citep{shapira2016pitfalls}.

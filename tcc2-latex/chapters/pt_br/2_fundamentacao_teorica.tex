@@ -178,11 +178,11 @@ armazenamento para séries temporais, cada uma com diferentes compromissos entre
 latência de leitura e consumo de recursos.
 
 \textbf{Apache IoTDB}~\cite{wang2023iotdb} foi concebido especificamente para o domínio IoT.
-Ele usa o TsFile, um formato de arquivo colunar personalizado que armazena dados em blocos
+Ele usa o TsFile~\citep{zhao2024tsfile}, um formato de arquivo colunar personalizado que armazena dados em blocos
 ordenados com estatísticas de mínimo/máximo por bloco. As escritas são primeiro absorvidas em
 um buffer em memória (memtable) gerenciado pela JVM e descarregadas para segmentos TsFile
 de forma assíncrona. Essa estratégia de escrita diferida é similar a uma abordagem de
-Log-Structured Merge Tree (LSM), trocando garantias estritas de durabilidade por alta vazão
+Log-Structured Merge Tree (LSM)~\citep{oneil1996lsm}, trocando garantias estritas de durabilidade por alta vazão
 de escrita. A interface de ingestão nativa é um protocolo binário Thrift RPC
 (SESSION\_BY\_TABLET), que submete tablets colunares tipados diretamente no buffer de escrita
 com sobrecarga mínima. As estatísticas de mínimo/máximo armazenadas por bloco permitem a
@@ -199,7 +199,7 @@ usam a linguagem Flux. O motor TSM mantém um Índice de Séries Temporais (TSI)
 séries. A memória em processo do InfluxDB é dominada pelo cache TSM, pelo índice de séries e
 pela sobrecarga do runtime Go~\citep{naqvi2017influxdb}.
 
-\textbf{TimescaleDB} estende o PostgreSQL com otimizações para séries temporais~\citep{Ramakrishnan2003}.
+\textbf{TimescaleDB} estende o PostgreSQL com otimizações para séries temporais~\citep{timescaledb}.
 Sua estrutura de dados primária é a \textit{hipertabela}: uma tabela lógica que é
 automaticamente particionada em \textit{blocos} físicos por intervalo de tempo. Consultas que
 especificam um intervalo de tempo podem eliminar blocos automaticamente, tocando apenas as
@@ -266,9 +266,13 @@ suficientemente à carga de trabalho real, benchmarks personalizados que adaptem
 tarefas padrão por operações mais representativas devem ser considerados.
 
 A reprodutibilidade é uma propriedade essencial, mas frequentemente negligenciada, dos benchmarks
-de banco de dados. Como observado nos cinco estudos de desempenho revisados neste trabalho, apenas um
+de banco de dados. Como observado nos seis estudos de desempenho revisados neste trabalho, apenas um
 fornece os scripts e configurações exatas necessárias para replicação
 independente~\citep{pereira2023mulletbench}. Isso limita a capacidade
 de validar resultados, comparar descobertas entre estudos e construir sobre trabalhos anteriores,
 uma lacuna que este estudo aborda diretamente por meio de sua infraestrutura de benchmark
 totalmente automatizada e publicamente disponível.
+Além do compartilhamento de código, o isolamento de recursos entre os sistemas avaliados é
+igualmente crítico: executar múltiplos motores de banco de dados simultaneamente no mesmo
+hardware introduz artefatos de contenção de cache de páginas e E/S que podem inverter
+conclusões reportadas~\citep{shapira2016pitfalls}.

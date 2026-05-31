@@ -14,7 +14,7 @@ of datasets applicable to time series database analyses. \cite{Gaber2005Mining} 
 relevant information about the algorithms underlying TSDB implementations, despite not being
 directly focused on comparative evaluation.
 
-From the initial reading, six works were selected for detailed study. This chapter is organized
+From the initial reading, seven works were selected for detailed study. This chapter is organized
 in three sections. The \textit{Functionality Analysis} section covers works that evaluate
 technical and operational characteristics of TSDB systems. The \textit{Performance Analysis}
 section covers comparative benchmark studies. The \textit{Comparative Analysis} section
@@ -35,7 +35,7 @@ result identified InfluxDB as the leading solution in the analysis.
 
 \subsection{Performance Analysis}
 
-Five works in the format of controlled benchmarks or real-scenario comparisons were selected
+Six works in the format of controlled benchmarks or real-scenario comparisons were selected
 for detailed analysis.
 
 \cite{lima2024avaliando} employed insertion tests (ranging from 1{,}000 to 5 million records)
@@ -66,6 +66,19 @@ ideal for high-velocity temporal data ingestion scenarios such as IoT and monito
 not be adequate for applications requiring complex JOIN operations or frequent updates.
 Reproducibility was classified as non-existent, with no scripts or configurations shared.
 
+\cite{grzesik2020comparative} evaluated five time series databases (TimescaleDB, InfluxDB,
+Riak~TS, PostgreSQL, and SQLite) on a Raspberry~Pi~4 (ARM Cortex-A72, 4\,GB RAM), chosen
+as a representative low-power edge device, making this the only study in the reviewed
+literature targeting constrained-resource deployments. Tests covered single-point and batch
+inserts (groups of~10) and three aggregation query scenarios executed 5{,}000 times each,
+using 28{,}800 synthetic sensor readings (temperature, pressure, humidity, and air-quality
+metrics from 10 simulated sensors over a 24-hour window). PostgreSQL was the fastest system
+for both insert and query workloads under these hardware constraints; InfluxDB showed the
+largest relative gain from batching (8.65$\times$ throughput improvement). TimescaleDB and
+InfluxDB were highlighted as more practical choices when native time-series features such as
+retention policies and continuous aggregates are required in production edge deployments.
+Reproducibility was classified as non-existent, with no scripts or configurations published.
+
 \cite{pereira2023mulletbench} evaluated the performance of InfluxDB~2.7 and Apache IoTDB~1.1.1
 in three scenarios: cloud-only, 2~edge~+~cloud, and 4~edge~+~cloud, testing insertion,
 query, and mixed workloads, each executed three times after a system reboot. The tools used
@@ -90,11 +103,12 @@ trillions of data points.
 
 \subsection{Comparative Analysis}
 
-Table~\ref{tab:related} aggregates the key attributes of the five performance studies, enabling
+Table~\ref{tab:related} aggregates the key attributes of the six performance studies, enabling
 a comparative analysis across dimensions most relevant to benchmark methodology.
 
 \begin{table*}[t]
   \centering
+  \footnotesize
   \caption{Comparison of related TSDB benchmark studies.}
   \label{tab:related}
   \begin{tabular}{lllllll}
@@ -105,6 +119,7 @@ a comparative analysis across dimensions most relevant to benchmark methodology.
     \cite{pereira2023mulletbench}  & 2023 & NoSQL       & Full    & Synthetic          & MulletBench, Ansible, Docker  & IoTDB    \\
     \cite{wang2023iotdb}           & 2023 & SQL + NoSQL & Partial & Real + Synthetic   & TSBS                          & IoTDB    \\
     \cite{shah2022performance}     & 2022 & SQL + NoSQL & None    & Real + Synthetic   & timeseries-generator (Python) & InfluxDB \\
+    \cite{grzesik2020comparative}  & 2020 & SQL + NoSQL & None    & Synthetic          & Manual                        & PostgreSQL \\
     \cite{naqvi2017influxdb}       & 2017 & SQL + NoSQL & None    & Real + Synthetic   & Telegraf, Kapacitor            & InfluxDB \\
     \hline
   \end{tabular}
@@ -117,7 +132,7 @@ of the databases themselves means that older findings may no longer apply to cur
 
 \textbf{Database coverage.} InfluxDB is present in every reviewed study, serving as the de
 facto reference point for TSDB comparisons, even in works where another system is the
-primary subject, as in~\cite{wang2023iotdb}. The presence of TimescaleDB in three of five
+primary subject, as in~\cite{wang2023iotdb}. The presence of TimescaleDB in four of six
 studies reflects its growing relevance as a SQL-compatible alternative. The most notable
 trend is the emergence of Apache IoTDB: appearing only in the two most recent studies
 (2023), it leads both of them~\citep{pereira2023mulletbench,wang2023iotdb}, suggesting performance improvements in recent versions, selection bias in recent benchmarks
@@ -125,7 +140,7 @@ toward IoT workloads, or growing recognition of its strengths for this domain; t
 available data do not allow distinguishing among these explanations.
 
 \textbf{Reproducibility.} This is the most significant methodological gap in the reviewed
-literature. Of five performance studies, only one, \cite{pereira2023mulletbench},
+literature. Of six performance studies, only one, \cite{pereira2023mulletbench},
 is fully reproducible, with all code and configurations publicly available on GitHub.
 Two studies (\cite{lima2024avaliando} and \cite{wang2023iotdb}) offer partial reproducibility
 through Docker containers or described configurations, while the remaining two
@@ -133,7 +148,7 @@ through Docker containers or described configurations, while the remaining two
 This limits independent validation of results and makes it difficult to attribute performance
 differences to database architecture rather than experimental conditions.
 
-\textbf{Datasets.} All five studies use synthetic datasets, reflecting the need for
+\textbf{Datasets.} All six studies use synthetic datasets, reflecting the need for
 controlled, volume-scalable data. Three studies additionally include real datasets such as
 NYC Taxi data, IoT sensor readings, and industrial vehicle data~\citep{shah2022performance,
 naqvi2017influxdb,wang2023iotdb}, providing practical relevance alongside experimental
@@ -147,16 +162,18 @@ tests used mid-range machines, consistent with a focus on realistic deployment s
 The inclusion of cloud testing in more recent studies~\citep{pereira2023mulletbench,wang2023iotdb}
 reflects growing interest in edge-to-cloud architectures.
 
-\textbf{Outcome trends.} InfluxDB leads in three of five studies, all from 2017--2022.
-Apache IoTDB leads in both 2023 studies. This temporal pattern is notable: it may indicate
-performance improvements in IoTDB's recent versions, or it may reflect the fact that
-more recent benchmarks include IoT-specific workloads where IoTDB's native data model
-provides a structural advantage. The shift does not necessarily invalidate InfluxDB for
-other workloads; it does, however, motivate the inclusion of both databases in any
-contemporary comparative evaluation.
+\textbf{Outcome trends.} InfluxDB leads in three of six studies (2017, 2022, and 2024).
+Apache IoTDB leads in both 2023 studies. PostgreSQL leads in the edge-computing
+study~\citep{grzesik2020comparative}, a result attributable to the constrained Raspberry~Pi
+hardware rather than general TSDB performance characteristics. The temporal pattern among
+general-purpose benchmarks remains notable: it may indicate performance improvements in
+IoTDB's recent versions, or it may reflect the fact that more recent benchmarks include
+IoT-specific workloads where IoTDB's native data model provides a structural advantage.
+The shift does not necessarily invalidate InfluxDB for other workloads; it does, however,
+motivate the inclusion of both databases in any contemporary comparative evaluation.
 
 In summary, the reviewed literature reveals three key gaps that the present work addresses:
-(1) insufficient reproducibility: only one of five studies is fully replicable; (2) limited
+(1) insufficient reproducibility: only one of six studies is fully replicable; (2) limited
 coverage of IoTDB alongside InfluxDB and TimescaleDB in the same controlled benchmark; and
 (3) the absence of a systematic analysis of how methodology choices (resource isolation,
 database tuning) affect reported conclusions. This study contributes to closing all three gaps.

@@ -15,7 +15,7 @@ temporais. \cite{Gaber2005Mining} contribuiu com informações relevantes sobre 
 subjacentes às implementações de BDSTs, apesar de não estar diretamente focado em avaliação
 comparativa.
 
-Da leitura inicial, seis trabalhos foram selecionados para estudo detalhado. Este capítulo está
+Da leitura inicial, sete trabalhos foram selecionados para estudo detalhado. Este capítulo está
 organizado em três seções. A seção de \textit{Análise de Funcionalidade} cobre trabalhos que
 avaliam características técnicas e operacionais dos sistemas BDST. A seção de \textit{Análise
 de Desempenho} cobre estudos comparativos de benchmark. A seção de \textit{Análise Comparativa}
@@ -36,7 +36,7 @@ quanto operacionais. O resultado identificou o InfluxDB como a solução líder 
 
 \subsection{Análise de Desempenho}
 
-Cinco trabalhos no formato de benchmarks controlados ou comparações em cenários reais foram
+Seis trabalhos no formato de benchmarks controlados ou comparações em cenários reais foram
 selecionados para análise detalhada.
 
 \cite{lima2024avaliando} empregaram testes de inserção (variando de 1.000 a 5 milhões de
@@ -70,6 +70,20 @@ pode não ser adequado para aplicações que exigem operações complexas de JOI
 frequentes. A reprodutibilidade foi classificada como inexistente, sem scripts ou configurações
 compartilhadas.
 
+\cite{grzesik2020comparative} avaliaram cinco bancos de dados de séries temporais (TimescaleDB,
+InfluxDB, Riak~TS, PostgreSQL e SQLite) em um Raspberry~Pi~4 (ARM Cortex-A72, 4\,GB de RAM),
+escolhido como dispositivo de borda de baixo consumo representativo, sendo o único estudo
+na literatura revisada direcionado a implantações com recursos restritos. Os testes cobriram
+inserções pontuais e em lote (grupos de~10) e três cenários de consulta de agregação executados
+5.000 vezes cada, utilizando 28.800 leituras sintéticas de sensores (temperatura, pressão,
+umidade e métricas de qualidade do ar de 10 sensores simulados em uma janela de 24 horas).
+O PostgreSQL foi o sistema mais rápido tanto para inserção quanto para consulta nessas restrições
+de hardware; o InfluxDB apresentou o maior ganho relativo com o uso de lotes (melhoria de
+8,65$\times$ na vazão). TimescaleDB e InfluxDB foram destacados como escolhas mais adequadas
+quando recursos nativos de séries temporais, como políticas de retenção e agregados contínuos,
+são necessários em implantações de borda em produção. A reprodutibilidade foi classificada
+como inexistente, sem scripts ou configurações publicados.
+
 \cite{pereira2023mulletbench} avaliaram o desempenho do InfluxDB~2.7 e Apache IoTDB~1.1.1 em
 três cenários: somente nuvem, 2~borda~+~nuvem e 4~borda~+~nuvem, testando cargas de trabalho
 de inserção, consulta e mistas, cada uma executada três vezes após reinicialização do sistema.
@@ -96,12 +110,13 @@ de dados.
 
 \subsection{Análise Comparativa}
 
-A Tabela~\ref{tab:related} agrega os principais atributos dos cinco estudos de desempenho,
+A Tabela~\ref{tab:related} agrega os principais atributos dos seis estudos de desempenho,
 permitindo uma análise comparativa nas dimensões mais relevantes para a metodologia de
 benchmark.
 
 \begin{table*}[t]
   \centering
+  \footnotesize
   \caption{Comparação de estudos de benchmark de BDSTs relacionados.}
   \label{tab:related}
   \begin{tabular}{lllllll}
@@ -112,6 +127,7 @@ benchmark.
     \cite{pereira2023mulletbench}  & 2023 & NoSQL       & Total   & Sintético          & MulletBench, Ansible, Docker  & IoTDB    \\
     \cite{wang2023iotdb}           & 2023 & SQL + NoSQL & Parcial & Real + Sintético   & TSBS                          & IoTDB    \\
     \cite{shah2022performance}     & 2022 & SQL + NoSQL & Nenhuma & Real + Sintético   & timeseries-generator (Python) & InfluxDB \\
+    \cite{grzesik2020comparative}  & 2020 & SQL + NoSQL & Nenhuma & Sintético          & Manual                        & PostgreSQL \\
     \cite{naqvi2017influxdb}       & 2017 & SQL + NoSQL & Nenhuma & Real + Sintético   & Telegraf, Kapacitor            & InfluxDB \\
     \hline
   \end{tabular}
@@ -126,7 +142,7 @@ versões atuais.
 \textbf{Cobertura de bancos de dados.} O InfluxDB está presente em todos os estudos revisados,
 servindo como o ponto de referência de facto para comparações de BDSTs, mesmo em trabalhos
 onde outro sistema é o assunto principal, como em~\cite{wang2023iotdb}. A presença do
-TimescaleDB em três dos cinco estudos reflete sua crescente relevância como alternativa
+TimescaleDB em quatro dos seis estudos reflete sua crescente relevância como alternativa
 compatível com SQL. A tendência mais notável é a emergência do Apache IoTDB: aparecendo apenas
 nos dois estudos mais recentes (2023), ele lidera em ambos~\citep{pereira2023mulletbench,wang2023iotdb},
 sugerindo melhorias de desempenho nas versões recentes, viés de seleção dos benchmarks
@@ -135,7 +151,7 @@ fortes para esse domínio; os dados disponíveis não permitem distinguir entre 
 explicações.
 
 \textbf{Reprodutibilidade.} Esta é a lacuna metodológica mais significativa na literatura
-revisada. Dos cinco estudos de desempenho, apenas um (\cite{pereira2023mulletbench})
+revisada. Dos seis estudos de desempenho, apenas um (\cite{pereira2023mulletbench})
 é totalmente reprodutível, com todo o código e configurações publicamente disponíveis no GitHub.
 Dois estudos (\cite{lima2024avaliando} e \cite{wang2023iotdb}) oferecem reprodutibilidade
 parcial por meio de contêineres Docker ou configurações descritas, enquanto os dois restantes
@@ -143,7 +159,7 @@ parcial por meio de contêineres Docker ou configurações descritas, enquanto o
 Isso limita a validação independente dos resultados e dificulta atribuir diferenças de
 desempenho à arquitetura do banco de dados em vez de às condições experimentais.
 
-\textbf{Conjuntos de dados.} Todos os cinco estudos utilizam conjuntos de dados sintéticos,
+\textbf{Conjuntos de dados.} Todos os seis estudos utilizam conjuntos de dados sintéticos,
 refletindo a necessidade de dados controlados e escaláveis em volume. Três estudos incluem
 adicionalmente conjuntos de dados reais, como dados de táxi em NYC, leituras de sensores IoT e
 dados industriais de veículos~\citep{shah2022performance,naqvi2017influxdb,wang2023iotdb},
@@ -158,16 +174,19 @@ testes utilizou máquinas de médio porte, consistente com foco em cenários de 
 realistas. A inclusão de testes em nuvem em estudos mais recentes~\citep{pereira2023mulletbench,wang2023iotdb}
 reflete o crescente interesse em arquiteturas borda-nuvem.
 
-\textbf{Tendências de resultados.} O InfluxDB lidera em três dos cinco estudos, todos de
-2017--2022. O Apache IoTDB lidera em ambos os estudos de 2023. Esse padrão temporal é notável:
-pode indicar melhorias de desempenho nas versões recentes do IoTDB, ou pode refletir o fato de
-que benchmarks mais recentes incluem cargas de trabalho específicas de IoT nas quais o modelo
-de dados nativo do IoTDB oferece uma vantagem estrutural. A mudança não invalida necessariamente
-o InfluxDB para outras cargas de trabalho; no entanto, motiva a inclusão de ambos os bancos de
-dados em qualquer avaliação comparativa contemporânea.
+\textbf{Tendências de resultados.} O InfluxDB lidera em três dos seis estudos (2017, 2022
+e 2024). O Apache IoTDB lidera em ambos os estudos de 2023. O PostgreSQL lidera no estudo
+de computação de borda~\citep{grzesik2020comparative}, resultado atribuível ao hardware
+restrito do Raspberry~Pi em vez de características gerais de desempenho de BDSTs. O padrão
+temporal entre os benchmarks de propósito geral permanece notável: pode indicar melhorias de
+desempenho nas versões recentes do IoTDB, ou pode refletir o fato de que benchmarks mais
+recentes incluem cargas de trabalho específicas de IoT nas quais o modelo de dados nativo do
+IoTDB oferece uma vantagem estrutural. A mudança não invalida necessariamente o InfluxDB para
+outras cargas de trabalho; no entanto, motiva a inclusão de ambos os bancos de dados em
+qualquer avaliação comparativa contemporânea.
 
 Em resumo, a literatura revisada revela três lacunas principais que o presente trabalho aborda:
-(1) reprodutibilidade insuficiente: apenas um dos cinco estudos é totalmente replicável;
+(1) reprodutibilidade insuficiente: apenas um dos seis estudos é totalmente replicável;
 (2) cobertura limitada do IoTDB junto ao InfluxDB e TimescaleDB no mesmo benchmark controlado;
 e (3) a ausência de uma análise sistemática de como as escolhas metodológicas (isolamento de
 recursos, ajuste de banco de dados) afetam as conclusões reportadas. Este estudo contribui para

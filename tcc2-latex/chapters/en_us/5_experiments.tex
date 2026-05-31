@@ -7,7 +7,7 @@ All benchmarks were executed on a single host machine with the specifications li
 Table~\ref{tab:hardware}. The three database containers and the benchmark client
 shared this machine with no concurrent workloads running during test sessions.
 
-\begin{table}[ht]
+\begin{table*}[t]
   \centering
   \caption{Test environment hardware and software versions.}
   \label{tab:hardware}
@@ -26,7 +26,7 @@ shared this machine with no concurrent workloads running during test sessions.
     Benchmark   & iot-benchmark~\cite{iotbenchmark} (Java, Maven) \\
     \hline
   \end{tabular}
-\end{table}
+\end{table*}
 
 CPU utilization figures are expressed as a percentage of a single logical core, consistent
 with \texttt{docker stats} reporting conventions. A value of 600\% would indicate full
@@ -42,7 +42,7 @@ Table~\ref{tab:write-baseline} shows baseline write performance at small scale u
 configuration. IoTDB achieves 2.16\,M\,pts/s, approximately 5$\times$ InfluxDB and 12$\times$
 TimescaleDB.
 
-\begin{table}[ht]
+\begin{table*}[t]
   \centering
   \caption{Baseline write performance at small scale (tuned). Throughput in pts/s.}
   \label{tab:write-baseline}
@@ -55,7 +55,7 @@ TimescaleDB.
     TimescaleDB &   174{,}787   & 27.70\,ms & 223.00\,ms & 22.5\% \\
     \hline
   \end{tabular}
-\end{table}
+\end{table*}
 
 Three compounding architectural factors explain the gap.
 
@@ -129,7 +129,7 @@ it is the single most impactful configuration choice for InfluxDB and IoTDB user
 
 Table~\ref{tab:ooo} shows how each database handles the 20\% late-arriving data workload.
 
-\begin{table}[ht]
+\begin{table*}[t]
   \centering
   \caption{Out-of-order penalty: throughput (pts/s) and relative degradation
   from baseline write, small scale (tuned).}
@@ -143,7 +143,7 @@ Table~\ref{tab:ooo} shows how each database handles the 20\% late-arriving data 
     TimescaleDB &   174{,}787   &   160{,}121   & $-$8.4\% \\
     \hline
   \end{tabular}
-\end{table}
+\end{table*}
 
 TimescaleDB shows the smallest relative degradation because PostgreSQL's B-tree index
 updates are order-independent: inserting a row with an older timestamp incurs the same cost
@@ -269,7 +269,7 @@ a secondary data structure to prune non-matching storage blocks.
 
 Table~\ref{tab:vfilter} shows value-filter latency and its scaling behavior across scales.
 
-\begin{table}[ht]
+\begin{table*}[t]
   \centering
   \caption{Value-filter average latency (ms) across scales (tuned).
   The ratio column shows latency growth from small to large scale (data volume one hundred times larger).}
@@ -283,7 +283,7 @@ Table~\ref{tab:vfilter} shows value-filter latency and its scaling behavior acro
     InfluxDB    &  71.09 &  310.75 &  496.81 &  7.0$\times$ \\
     \hline
   \end{tabular}
-\end{table}
+\end{table*}
 
 IoTDB's advantage is large and \textit{improves} with scale. Each TsFile chunk stores
 per-series min/max statistics. A value predicate can skip entire chunks whose stored range
@@ -465,7 +465,7 @@ and IoTDB's costs remain bounded.
 Table~\ref{tab:tsdb-tuning} compares TimescaleDB write performance before and after
 pgtune at small scale.
 
-\begin{table}[ht]
+\begin{table*}[t]
   \centering
   \caption{TimescaleDB write performance: original vs.\ tuned (small scale).
   $\Delta$ shows percentage change; negative means improvement for latency.}
@@ -481,7 +481,7 @@ pgtune at small scale.
     READ         & (latency) & (latency) & ---     & $-$38\% \\
     \hline
   \end{tabular}
-\end{table}
+\end{table*}
 
 The primary driver is \texttt{shared\_buffers=8GB}, which provides PostgreSQL a large
 enough buffer pool to avoid buffer evictions that force extra WAL writes.
@@ -565,8 +565,9 @@ Table~\ref{tab:summary} consolidates the workload-winner mapping across all test
 \begin{table*}[t]
   \centering
   \caption{Workload recommendation summary across all tested scenarios.}
+  \footnotesize
   \label{tab:summary}
-  \begin{tabular}{lll}
+  \begin{tabular}{l l p{0.55\linewidth}}
     \hline
     \textbf{Workload} & \textbf{Best DB} & \textbf{Key architectural reason} \\
     \hline

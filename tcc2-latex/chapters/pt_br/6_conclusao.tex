@@ -41,7 +41,7 @@ um artefato de despejo do cache de páginas (reexecução: 2,7\%), e sua satura�
 medições de memória mudaram em uma ordem de magnitude quando o ciclo de vida compartilhado
 de contêineres foi corrigido. Essas reversões demonstram que resultados de benchmark em
 ambientes com recursos compartilhados requerem validação explícita por meio de reexecuções
-isoladas antes de poderem ser apresentados como propriedades arquiteturais.
+isoladas antes de poderem ser apresentados como propriedades arquiteturais~\citep{shapira2016pitfalls}.
 
 \subsection{Comparação Final}
 
@@ -51,11 +51,12 @@ de três níveis: \textbf{A} (forte), \textbf{M} (moderado), \textbf{F} (fraco).
 
 \begin{table*}[t]
   \centering
+  \footnotesize
   \caption{Comparação final do Apache IoTDB, InfluxDB e TimescaleDB nas dimensões mais
     relevantes para implantações IoT. \textbf{A}~=~forte, \textbf{M}~=~moderado,
   \textbf{F}~=~fraco. Valores de latência na escala pequena, configuração ajustada.}
   \label{tab:final}
-  \begin{tabular}{lcccl}
+  \begin{tabular}{l c c c p{0.3\linewidth}}
     \hline
     \textbf{Dimensão} & \textbf{IoTDB} & \textbf{InfluxDB} & \textbf{TimescaleDB} & \textbf{Observações} \\
     \hline

@@ -53,8 +53,8 @@ para subamostragem e compressão opcional por bloco. Ele mantém o motor relacio
 durabilidade baseada em WAL, controle de concorrência MVCC, índices B-tree e compatibilidade
 completa com SQL. Para organizações com infraestrutura PostgreSQL existente, ou para aplicações
 que exigem junções entre dados de séries temporais e relacionais, ele fornece um caminho para
-a capacidade de séries temporais sem abandonar o ecossistema relacional. Aparece em três dos
-cinco benchmarks revisados~\citep{shah2022performance,lima2024avaliando,wang2023iotdb}.
+a capacidade de séries temporais sem abandonar o ecossistema relacional. Aparece em quatro dos
+seis benchmarks revisados~\citep{shah2022performance,lima2024avaliando,wang2023iotdb,grzesik2020comparative}.
 
 O PostgreSQL simples, sem a extensão TimescaleDB, foi explicitamente excluído. O TimescaleDB
 tende a superar o PostgreSQL simples neste domínio; incluir ambos duplicaria os testes.
@@ -163,7 +163,7 @@ linha de base anterior.
 Três escalas de volume de dados são definidas para expor como as características de desempenho
 evoluem com o tamanho do conjunto de dados. A Tabela~\ref{tab:scales} resume os parâmetros.
 
-\begin{table}[ht]
+\begin{table*}[t]
   \centering
   \caption{Parâmetros de escala do benchmark. Todas as escalas usam um tamanho de lote padrão
     de 100 linhas por requisição. A escala grande contém aproximadamente cem vezes mais dados
@@ -178,7 +178,7 @@ evoluem com o tamanho do conjunto de dados. A Tabela~\ref{tab:scales} resume os 
     Grande  & 10 & 50 & 20 & 5.000 & ${\sim}$2 h \\
     \hline
   \end{tabular}
-\end{table}
+\end{table*}
 
 A escala grande contém aproximadamente 20$\times$ mais dados que a média e cem vezes mais
 que a pequena, impulsionada tanto por uma contagem de laços maior quanto por uma topologia
@@ -231,7 +231,7 @@ conjunto de dados completo do zero.
 
 A Tabela~\ref{tab:metrics} descreve as métricas de desempenho coletadas para cada execução.
 
-\begin{table}[ht]
+\begin{table*}[t]
   \centering
   \caption{Métricas de desempenho coletadas por execução de benchmark.}
   \label{tab:metrics}
@@ -247,7 +247,7 @@ A Tabela~\ref{tab:metrics} descreve as métricas de desempenho coletadas para ca
     Tempo de parede (s)      & Duração da execução \\
     \hline
   \end{tabular}
-\end{table}
+\end{table*}
 
 Para os testes de escrita, a vazão mede pontos de dados ingeridos por segundo. Para os testes
 de leitura, a vazão soma as contagens de pontos retornados por todos os tipos de consulta ativos.
@@ -272,7 +272,7 @@ antes de reexecutar todas as escalas:
   \item \textbf{Ciclo de vida sequencial de contêineres.} A configuração original iniciava todos
     os três contêineres de banco de dados simultaneamente. Embora cada teste fosse executado em
     um banco de dados por vez, os contêineres ociosos competiam pelo cache de páginas do SO e
-    largura de banda de E/S. O TimescaleDB acumulou vários gigabytes de cache de páginas durante
+    largura de banda de E/S~\citep{shapira2016pitfalls}. O TimescaleDB acumulou vários gigabytes de cache de páginas durante
     as sessões de escrita do IoTDB, produzindo medições de memória profundamente enganosas. A JVM
     do IoTDB pré-alocou seu heap máximo configurado durante o tempo ocioso pela mesma razão.
     A configuração corrigida inicia cada contêiner imediatamente antes de seus testes e o para

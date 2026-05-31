@@ -37,7 +37,7 @@ TimescaleDB's 23\% out-of-order penalty at large scale was a page-cache eviction
 (rerun: 77.4\%). The memory measurements changed by an order of magnitude when the shared
 container lifecycle was corrected. These reversals demonstrate that benchmark results from
 shared-resource environments require explicit validation through isolation reruns before
-they can be presented as architectural properties.
+they can be presented as architectural properties~\citep{shapira2016pitfalls}.
 
 \subsection{Final Comparison}
 
@@ -47,11 +47,12 @@ scale: \textbf{H} (strong), \textbf{M} (moderate), \textbf{L} (weak).
 
 \begin{table*}[t]
   \centering
+  \footnotesize
   \caption{Final comparison of Apache IoTDB, InfluxDB, and TimescaleDB across key dimensions
     for IoT deployments. \textbf{H}~=~strong, \textbf{M}~=~moderate, \textbf{L}~=~weak.
   Latency values are at small scale, tuned configuration.}
   \label{tab:final}
-  \begin{tabular}{lcccl}
+  \begin{tabular}{l c c c p{0.3\linewidth}}
     \hline
     \textbf{Dimension} & \textbf{IoTDB} & \textbf{InfluxDB} & \textbf{TimescaleDB} & \textbf{Notes} \\
     \hline
