@@ -72,9 +72,9 @@ Alternative tools were evaluated. The Time Series Benchmark Suite (TSBS) offers 
 multi-database framework but lacks native IoTDB support at the time of this writing.
 Apache JMeter, used in Lima et al.~\cite{lima2024avaliando}, handles HTTP-based systems well
 but requires custom scripting for Thrift and JDBC interfaces, introducing potential tool-specific
-overhead. iot-benchmark's uniform interface and IoT-specific workload semantics ---
-concurrent clients organized into device and sensor hierarchies, configurable batch sizes,
-and Poisson-distributed out-of-order data generation --- made it the most appropriate choice
+overhead. iot-benchmark's uniform interface and IoT-specific workload semantics (concurrent clients
+  organized into device and sensor hierarchies, configurable batch sizes, and
+Poisson-distributed out-of-order data generation) made it the most appropriate choice
 for this study.
 
 The tool produces two structured output matrices that are parsed by the orchestration layer.
@@ -94,24 +94,24 @@ Four write tests exercise distinct ingestion patterns:
 
 \begin{description}
   \item[\texttt{write}] Baseline sequential ingestion with ordered timestamps and the
-  default batch size of 100 rows per request. This measures raw sustained write throughput
-  under ideal, ordered conditions.
+    default batch size of 100 rows per request. This measures raw sustained write throughput
+    under ideal, ordered conditions.
 
   \item[\texttt{out-of-order}] Twenty percent of data points arrive with timestamps older
-  than the current ingestion frontier, modeled as a Poisson-distributed delay. This simulates
-  IoT sensors that lose connectivity and later replay buffered readings --- a ubiquitous
-  pattern in industrial and field deployments where sensors operate over unreliable cellular
-  or LPWAN networks.
+    than the current ingestion frontier, modeled as a Poisson-distributed delay. This simulates
+    IoT sensors that lose connectivity and later replay buffered readings, a ubiquitous
+    pattern in industrial and field deployments where sensors operate over unreliable cellular
+    or LPWAN networks.
 
   \item[\texttt{batch-small}] \texttt{BATCH\_SIZE=1}: one data point per write request.
-  This isolates per-request protocol overhead: an HTTP round-trip plus line-protocol parsing
-  for InfluxDB, a full PostgreSQL client-server cycle plus WAL flush for TimescaleDB, and a
-  single Thrift RPC call for IoTDB.
+    This isolates per-request protocol overhead: an HTTP round-trip plus line-protocol parsing
+    for InfluxDB, a full PostgreSQL client-server cycle plus WAL flush for TimescaleDB, and a
+    single Thrift RPC call for IoTDB.
 
   \item[\texttt{batch-large}] \texttt{BATCH\_SIZE=1000}: 1{,}000 data points per request.
-  This tests bulk-loading efficiency and reveals the practical ceiling of each database's
-  batching architecture. The ratio between \texttt{batch-small} and \texttt{batch-large}
-  throughput directly quantifies how much per-request overhead dominates over data-transfer cost.
+    This tests bulk-loading efficiency and reveals the practical ceiling of each database's
+    batching architecture. The ratio between \texttt{batch-small} and \texttt{batch-large}
+    throughput directly quantifies how much per-request overhead dominates over data-transfer cost.
 \end{description}
 
 Each write test clears and re-seeds the database before running to ensure independent,
@@ -123,26 +123,26 @@ Five read tests cover the query patterns most common in IoT analytics pipelines:
 
 \begin{description}
   \item[\texttt{latest-point}] Retrieves the most recent value for each sensor. This is
-  the foundational real-time monitoring query: a dashboard or alerting system continuously
-  polling current device state.
+    the foundational real-time monitoring query: a dashboard or alerting system continuously
+    polling current device state.
 
   \item[\texttt{downsample}] Executes \texttt{GROUP~BY} time-bucket queries computing
-  averages over fixed time windows. This models the standard dashboard aggregation use case,
-  where raw sensor readings are collapsed into minute- or hour-level summaries.
+    averages over fixed time windows. This models the standard dashboard aggregation use case,
+    where raw sensor readings are collapsed into minute- or hour-level summaries.
 
   \item[\texttt{range-query}] Retrieves all data points within a specified time window,
-  without filtering on values. This models historical data export, replay pipelines, and
-  model retraining ingestion.
+    without filtering on values. This models historical data export, replay pipelines, and
+    model retraining ingestion.
 
   \item[\texttt{value-filter}] Applies value predicates such as \texttt{temperature~>~85.0},
-  including aggregations over value-filtered ranges. This models threshold alerting:
-  ``find all sensor readings exceeding the alarm level in the past hour.'' Value-filter is
-  the most architecturally discriminating query type in this benchmark because it cannot be
-  answered from time-based indexes alone: each database must either maintain a secondary
-  index or scan all stored values.
+    including aggregations over value-filtered ranges. This models threshold alerting:
+    ``find all sensor readings exceeding the alarm level in the past hour.'' Value-filter is
+    the most architecturally discriminating query type in this benchmark because it cannot be
+    answered from time-based indexes alone: each database must either maintain a secondary
+    index or scan all stored values.
 
   \item[\texttt{read}] Runs all ten query types supported by iot-benchmark with equal weight,
-  providing a comprehensive mixed-workload baseline.
+    providing a comprehensive mixed-workload baseline.
 \end{description}
 
 All read tests operate on the dataset loaded by the preceding baseline \texttt{write} test.
@@ -156,7 +156,7 @@ dataset size. Table~\ref{tab:scales} summarizes the parameters.
 \begin{table}[ht]
   \centering
   \caption{Benchmark scale parameters. All scales use a default batch size of 100 rows per
-           request. Large scale contains ${\sim}100\times$ more data than small.}
+  request. Large scale contains ${\sim}100\times$ more data than small.}
   \label{tab:scales}
   \begin{tabular}{lrrrrr}
     \hline
@@ -172,8 +172,8 @@ dataset size. Table~\ref{tab:scales} summarizes the parameters.
 Large scale contains approximately 20$\times$ more data than medium and 100$\times$ more
 than small, driven by both a higher loop count and an expanded topology (10 clients
 $\times$ 50 devices $\times$ 20 sensors versus 5~$\times$~10~$\times$~10). Multi-scale
-measurement is essential because several key characteristics --- JVM JIT compilation
-saturation, buffer exhaustion, checkpoint stall patterns, and index scan scaling --- only
+measurement is essential because several key characteristics (JVM JIT compilation
+saturation, buffer exhaustion, checkpoint stall patterns, and index scan scaling) only
 manifest or become dominant at higher data volumes. A single-scale benchmark risks drawing
 conclusions that apply only to a narrow data range.
 
@@ -236,9 +236,9 @@ Table~\ref{tab:metrics} describes the performance metrics collected for each run
 
 For write tests, throughput measures data points ingested per second. For read tests,
 throughput sums point counts returned across all active query types. Because different query
-types return fundamentally different amounts of data per call --- a range query returns
-hundreds of points, a latest-point query returns exactly one --- \textit{latency} is used
-as the primary read comparison metric throughout Section~\ref{sec:experiments}.
+types return fundamentally different amounts of data per call: a range query returns
+hundreds of points, a latest-point query returns exactly one. \textit{Latency} is therefore
+used as the primary read comparison metric throughout Section~\ref{sec:experiments}.
 
 P99 latency captures tail behavior: 99\% of operations completed faster than this value.
 The gap between average and P99 reveals response-time consistency. A large gap signals
@@ -253,22 +253,22 @@ before re-running all scales:
 
 \begin{enumerate}
   \item \textbf{Sequential container lifecycle.} The original setup started all three
-  database containers simultaneously. Although each test ran on one database at a time, idle
-  containers competed for OS page cache and I/O bandwidth. TimescaleDB accumulated several
-  gigabytes of page cache during IoTDB's write sessions, producing deeply misleading memory
-  measurements. IoTDB's JVM pre-allocated its maximum heap during idle time for the same reason.
-  The corrected setup starts each container immediately before its tests and stops it
-  immediately after.
+    database containers simultaneously. Although each test ran on one database at a time, idle
+    containers competed for OS page cache and I/O bandwidth. TimescaleDB accumulated several
+    gigabytes of page cache during IoTDB's write sessions, producing deeply misleading memory
+    measurements. IoTDB's JVM pre-allocated its maximum heap during idle time for the same reason.
+    The corrected setup starts each container immediately before its tests and stops it
+    immediately after.
 
   \item \textbf{Database-level tuning.} TimescaleDB received a pgtune~\cite{pgtune}
-  configuration for PostgreSQL~15 targeting this machine's hardware:
-  \texttt{shared\_buffers=8GB}, \texttt{work\_mem=27413kB},
-  \texttt{maintenance\_work\_mem=2GB}, \texttt{effective\_io\_concurrency=1000}, and
-  \texttt{checkpoint\_completion\_target=0.9}. These settings are the standard baseline for
-  any production PostgreSQL deployment on this class of hardware; the defaults are tuned
-  for minimal-RAM environments and produce artificially poor performance on capable machines.
-  InfluxDB's TSM write-cache ceiling was raised from the default 1\,GB to 8\,GB to match the
-  available RAM. A 28\,GB memory limit was applied to every container.
+    configuration for PostgreSQL~15 targeting this machine's hardware:
+    \texttt{shared\_buffers=8GB}, \texttt{work\_mem=27413kB},
+    \texttt{maintenance\_work\_mem=2GB}, \texttt{effective\_io\_concurrency=1000}, and
+    \texttt{checkpoint\_completion\_target=0.9}. These settings are the standard baseline for
+    any production PostgreSQL deployment on this class of hardware; the defaults are tuned
+    for minimal-RAM environments and produce artificially poor performance on capable machines.
+    InfluxDB's TSM write-cache ceiling was raised from the default 1\,GB to 8\,GB to match the
+    available RAM. A 28\,GB memory limit was applied to every container.
 \end{enumerate}
 
 Both the original and tuned results are reported and analyzed at small scale, where the

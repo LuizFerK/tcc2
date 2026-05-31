@@ -1,0 +1,144 @@
+\section{Conclusão}
+\label{sec:conclusion}
+
+\subsection{Sumário das Descobertas}
+
+Este trabalho comparou três bancos de dados de séries temporais (Apache IoTDB, InfluxDB e
+TimescaleDB) em nove padrões de carga de trabalho IoT em três escalas de volume de dados,
+utilizando uma infraestrutura de benchmark totalmente automatizada e publicamente reprodutível,
+construída sobre Docker Compose, Nix e iot-benchmark~\cite{iotbenchmark}.
+
+Três descobertas principais emergem do estudo.
+
+\textbf{Nenhum banco de dados domina em todas as cargas de trabalho.} O IoTDB atinge
+23,6\,M pts/s de vazão de escrita sequencial na escala grande (59$\times$ mais que o
+TimescaleDB), mas requer aproximadamente 15\,GB de RAM e não oferece suporte a junções
+relacionais. A consulta de subamostragem \texttt{time\_bucket()} do TimescaleDB permanece
+abaixo de 1\,ms em todo o crescimento de 100$\times$ nos dados, tornando-o a escolha mais
+forte para análises em painel, enquanto seu caminho de escrita baseado em WAL limita a vazão
+de carregamento em lote. O InfluxDB ocupa um meio-termo prático: melhor vazão de escrita do
+que o TimescaleDB e melhor eficiência de memória do que o IoTDB, mas mais fraco em consultas
+de alertas por limite e consultas de último valor em escala.
+
+\textbf{As escolhas arquiteturais determinam o comportamento de escalonamento, não o ajuste.}
+A vantagem de filtro de valor do IoTDB cresce com o tamanho do conjunto de dados
+(crescimento de latência de 5,2$\times$ para dados 100$\times$ maiores) porque suas
+estatísticas de mínimo/máximo por bloco fornecem melhor eliminação no nível de bloco à medida
+que a densidade de dados aumenta. A latência de último valor do InfluxDB cresce linearmente
+com os arquivos armazenados porque o motor TSM não tem atalho de último valor em memória.
+A subamostragem do TimescaleDB é genuinamente de latência constante por escalas porque as
+consultas \texttt{time\_bucket()} varrem uma janela de tempo fixa, não o conjunto de dados
+completo. Esses comportamentos são invariantes arquiteturais que sobrevivem a mudanças de
+hardware, configuração ou versão do banco de dados.
+
+\textbf{A metodologia afeta criticamente a validade do benchmark.}
+Duas conclusões amplamente declaradas das execuções iniciais foram revertidas por reexecuções
+isoladas e ajustadas: a penalidade de 23\% fora de ordem do TimescaleDB na escala grande era
+um artefato de despejo do cache de páginas (reexecução: 2,7\%), e sua saturação de CPU de
+97,7\% reportada foi causada por competição de CPU compartilhada (reexecução: 77,4\%). As
+medições de memória mudaram em uma ordem de magnitude quando o ciclo de vida compartilhado
+de contêineres foi corrigido. Essas reversões demonstram que resultados de benchmark em
+ambientes com recursos compartilhados requerem validação explícita por meio de reexecuções
+isoladas antes de poderem ser apresentados como propriedades arquiteturais.
+
+\subsection{Comparação Final}
+
+A Tabela~\ref{tab:final} fornece uma comparação multidimensional dos três bancos de dados
+nas dimensões mais relevantes para decisões de implantação IoT. As avaliações usam uma escala
+de três níveis: \textbf{A} (forte), \textbf{M} (moderado), \textbf{F} (fraco).
+
+\begin{table*}[t]
+  \centering
+  \caption{Comparação final do Apache IoTDB, InfluxDB e TimescaleDB nas dimensões mais
+    relevantes para implantações IoT. \textbf{A}~=~forte, \textbf{M}~=~moderado,
+  \textbf{F}~=~fraco. Valores de latência na escala pequena, configuração ajustada.}
+  \label{tab:final}
+  \begin{tabular}{lcccl}
+    \hline
+    \textbf{Dimensão} & \textbf{IoTDB} & \textbf{InfluxDB} & \textbf{TimescaleDB} & \textbf{Observações} \\
+    \hline
+    Vazão de escrita sequencial      & \textbf{A} & M & F & 2,2\,M / 397\,K / 174\,K pts/s (pequena) \\
+    Vazão de carregamento em lote (L=1000) & \textbf{A} & A & M & 11,8\,M / 2,7\,M / 214\,K pts/s \\
+    Escrita de ponto único (L=1)     & \textbf{A} & M & F & 28\,K / 5\,K / 5\,K pts/s \\
+    Vazão fora de ordem (abs.)       & \textbf{A} & F & F & 1,87\,M / 255\,K / 160\,K pts/s; IoTDB lidera em cada escala \\
+    Tolerância fora de ordem (rel.)  & M & F & \textbf{A} & $-$13\% / $-$36\% / $-$8\% de penalidade \\
+    Latência de último valor         & A & \textbf{F} & \textbf{A} & 1,24 / 9,24 / 0,38\,ms; InfluxDB escala mal \\
+    Latência de subamostragem        & A & M & \textbf{A} & 1,81 / 5,71 / 0,61\,ms; TimescaleDB constante \\
+    Exportação de intervalo de tempo & A & M & \textbf{A} & 1,19 / 5,41 / 0,54\,ms \\
+    Latência de filtro de valor      & \textbf{A} & M & F & 3,72 / 71,09 / 23,98\,ms; IoTDB sublinear \\
+    Filtro de valor na escala grande & \textbf{A} & M & F & 19,4 / 496,8 / 510,0\,ms \\
+    Footprint de memória (escrita)   & F & \textbf{A} & A & $\sim$1,7\,GB / $\sim$190\,MB / $\sim$239\,MB inicial \\
+    Footprint de memória (estável)   & F & M & A & $\sim$10\,GB / 900\,MB / 1,8\,GB \\
+    Suporte a SQL/relacional         & F & F & \textbf{A} & Dialeto SQL IoTDB; apenas Flux; PostgreSQL completo \\
+    Ecossistema e ferramental        & M & M & \textbf{A} & Em crescimento; TS maduro; ecossistema PG completo \\
+    Garantia de durabilidade (escrita) & M & M & \textbf{A} & Flush assíncrono; flush assíncrono; WAL síncrono \\
+    Modelo de dados IoT (nativo)     & \textbf{A} & M & M & Hierarquia dispositivo/sensor; tags+campos; relacional \\
+    \hline
+  \end{tabular}
+\end{table*}
+
+A tabela suporta um framework de seleção baseado em carga de trabalho. Para pipelines IoT
+dominados por escrita com RAM suficiente, o IoTDB é a escolha clara. Para cargas de trabalho
+pesadas em análise com consultas de painel em janelas de tempo recentes, a compatibilidade SQL
+do TimescaleDB e a latência constante do \texttt{time\_bucket()} tornam-no a opção mais
+forte. Para cargas de trabalho de alertas por limite que devem consultar conjuntos de dados
+históricos crescentes, o escalonamento sublinear de filtro de valor do IoTDB oferece uma
+vantagem estrutural de longo prazo. Para cargas de trabalho mistas com volumes de escrita
+moderados e memória restrita, o InfluxDB fornece o perfil mais equilibrado.
+
+\subsection{Limitações}
+\label{sec:limitations}
+
+As seguintes limitações delimitam as conclusões deste estudo:
+
+\textbf{Implantação em nó único.} Todos os bancos de dados foram executados em um único host,
+eliminando a latência real de rede. O protocolo de linha HTTP do InfluxDB incorre em sobrecarga
+significativa de ida e volta em implantações distribuídas que a latência de loopback
+próxima de zero não captura.
+
+\textbf{Testes de leitura sequenciais.} As cargas de trabalho de leitura são executadas
+sequencialmente no mesmo conjunto de dados dentro de uma sessão. Testes posteriores se
+beneficiam de caches de páginas do SO mais quentes e estruturas de banco de dados em memória.
+O isolamento com qualidade de produção exigiria flush dos caches e reinicialização do banco
+de dados entre os testes de leitura.
+
+\textbf{Durabilidade diferida do IoTDB.} A vazão de escrita do IoTDB reflete o reconhecimento
+em memória antes da persistência em disco. Implantações com requisitos estritos de durabilidade
+precisariam configurar o modo WAL síncrono, o que pode reduzir a vazão.
+
+\textbf{Aquecimento da JVM.} O desempenho de leitura e de escrita de ponto único do IoTDB
+melhora significativamente ao longo da duração de uma sessão à medida que a compilação JIT
+otimiza os caminhos quentes. Benchmarks curtos subestimam a vazão em estado estacionário.
+Os valores na escala grande são os mais representativos do comportamento do IoTDB em produção.
+
+\subsection{Trabalhos Futuros}
+\label{sec:future-work}
+
+Diversas direções permanecem abertas para investigação posterior:
+
+\begin{itemize}
+  \item \textbf{Implantações distribuídas.} Avaliar clusters multi-nó do IoTDB, InfluxDB
+    Clustered e TimescaleDB com a extensão Citus quantificaria como o escalonamento horizontal
+    afeta os compromissos escrita-versus-leitura observados aqui e se a sobrecarga de rede muda
+    os custos relativos de protocolo.
+
+  \item \textbf{Conjuntos de dados do mundo real.} Testar com conjuntos de dados industriais
+    em larga escala (telemetria de veículos, dados de sensores de redes elétricas ou
+    monitoramento de processos de manufatura em escala de bilhões de pontos) validaria se o
+    escalonamento sublinear de filtro de valor do IoTDB continua se mantendo e revelaria novos
+    padrões não visíveis nas cargas de trabalho sintéticas usadas aqui.
+
+  \item \textbf{Overhead de durabilidade e alta disponibilidade.} Medir o custo de vazão e
+    latência de replicação, failover e cenários de recuperação de falhas seria essencial para
+    qualquer decisão de implantação em produção. O caminho de escrita assíncrono do IoTDB torna
+    isso particularmente importante.
+
+  \item \textbf{Evolução de versões.} Os três bancos de dados lançam atualizações com
+    frequência. O IoTDB~2.x, InfluxDB~3.0 (com seu novo motor de armazenamento colunar baseado
+    em Apache Arrow e DataFusion) e TimescaleDB~2.x introduzem mudanças arquiteturais que podem
+    alterar materialmente os compromissos descritos neste estudo.
+\end{itemize}
+
+Os scripts de benchmark, as configurações Docker e os arquivos de dados produzidos por este
+estudo estão publicamente disponíveis para facilitar a replicação e extensão por pesquisadores
+futuros.

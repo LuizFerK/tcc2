@@ -20,22 +20,61 @@
         let
           pkgs = nixpkgs.legacyPackages.${system};
           texlive = pkgs.texlive.combined.scheme-full;
+
+          fmtScript = pkgs.writeShellScriptBin "fmt-thesis" ''
+            set -e
+            root=$(${pkgs.git}/bin/git rev-parse --show-toplevel)
+            latex_dir="$root/tcc2-latex"
+
+            echo "[fmt] Formatting refs.bib with bibtex-tidy..."
+            tmp=$(mktemp)
+            ${pkgs.bibtex-tidy}/bin/bibtex-tidy \
+              --space=2 --align=14 --sort-fields --trailing-commas --no-escape \
+              < "$latex_dir/refs.bib" > "$tmp"
+            mv "$tmp" "$latex_dir/refs.bib"
+
+            echo "[fmt] Formatting .tex files with tex-fmt..."
+            ${pkgs.findutils}/bin/find "$latex_dir" -name "*.tex" -print0 \
+              | ${pkgs.findutils}/bin/xargs -0 \
+                  ${pkgs.tex-fmt}/bin/tex-fmt --nowrap
+
+            echo "[fmt] Done."
+          '';
+
           script = pkgs.writeShellScriptBin "build-thesis" ''
             set -e
             origdir=$(pwd)
-            tmpdir=$(mktemp -d)
-            trap "rm -rf $tmpdir" EXIT
-            cp -r "$origdir/tcc2-latex/." "$tmpdir/"
-            cd "$tmpdir"
-            HOME=$(mktemp -d) ${texlive}/bin/latexmk -pdf -bibtex -interaction=nonstopmode main-en.tex
-            cp main-en.pdf "$origdir/thesis.pdf"
-            echo "[thesis] PDF written to $origdir/thesis.pdf"
+
+            build_one() {
+              local lang="$1"   # en or pt
+              local main="$2"   # main-en.tex or main-pt.tex
+              local out="$3"    # thesis-en.pdf or thesis-pt.pdf
+
+              echo "[thesis] Building $lang version ($main)..."
+              tmpdir=$(mktemp -d)
+              cp -r "$origdir/tcc2-latex/." "$tmpdir/"
+              cd "$tmpdir"
+              HOME=$(mktemp -d) ${texlive}/bin/latexmk -pdf -bibtex -interaction=nonstopmode "$main"
+              cp "''${main%.tex}.pdf" "$origdir/$out"
+              echo "[thesis] $lang PDF written to $origdir/$out"
+              rm -rf "$tmpdir"
+              cd "$origdir"
+            }
+
+            build_one "English"    "main-en-us.tex" "thesis-en-us.pdf"
+            build_one "Portuguese" "main-pt-br.tex" "thesis-pt-br.pdf"
+
+            echo "[thesis] Done. Outputs: thesis-en-us.pdf  thesis-pt-br.pdf"
           '';
         in
         {
           thesis = {
             type = "app";
             program = "${script}/bin/build-thesis";
+          };
+          fmt = {
+            type = "app";
+            program = "${fmtScript}/bin/fmt-thesis";
           };
         }
       );
@@ -62,6 +101,8 @@
               gnused
               findutils
               git
+              bibtex-tidy
+              tex-fmt
             ];
             shellHook = ''
               if [ ! -f "$PWD/iot-benchmark/influxdb-2.0/target/iot-benchmark-influxdb-2.0/iot-benchmark-influxdb-2.0/benchmark.sh" ] || \
@@ -80,18 +121,19 @@
               fi
 
               echo "======================================================================="
-              echo " TCC IoT Benchmark — dev shell"
+              echo " TCC IoT Benchmark — dev shell                                         "
               echo "======================================================================="
-              echo "  python3 benchmark.py                       run all DBs, small scale"
-              echo "  python3 benchmark.py --scale medium        medium scale (~30 min)"
-              echo "  python3 benchmark.py --scale large         large scale (~2 h)"
-              echo "  python3 benchmark.py --db iotdb            iotdb only"
-              echo "  python3 benchmark.py --test write          write only"
-              echo "  python3 charts.py                          all sources, en-us"
-              echo "  python3 charts.py --source medium          single source"
-              echo "  python3 charts.py --language pt-br         portuguese labels"
+              echo "  python3 benchmark.py                       run all DBs, small scale  "
+              echo "  python3 benchmark.py --scale medium        medium scale (~30 min)    "
+              echo "  python3 benchmark.py --scale large         large scale (~2 h)        "
+              echo "  python3 benchmark.py --db iotdb            iotdb only                "
+              echo "  python3 benchmark.py --test write          write only                "
+              echo "  python3 charts.py                          all sources, en-us        "
+              echo "  python3 charts.py --source medium          single source             "
+              echo "  python3 charts.py --language pt-br         portuguese labels         "
               echo "-----------------------------------------------------------------------"
-              echo "  nix run .#thesis                           compile thesis"
+              echo "  nix run .#fmt                              format files              "
+              echo "  nix run .#thesis                           compile thesis            "
               echo "======================================================================="
             '';
           };

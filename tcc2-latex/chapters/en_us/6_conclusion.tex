@@ -3,15 +3,15 @@
 
 \subsection{Summary of Findings}
 
-This work compared three time-series databases --- Apache IoTDB, InfluxDB, and TimescaleDB
---- across nine IoT workload patterns at three data-volume scales, using a fully scripted
+This work compared three time-series databases (Apache IoTDB, InfluxDB, and TimescaleDB)
+across nine IoT workload patterns at three data-volume scales, using a fully scripted
 and publicly reproducible benchmark infrastructure built on Docker Compose, Nix, and
 iot-benchmark~\cite{iotbenchmark}.
 
 Three main findings emerge from the study.
 
 \textbf{No single database dominates across all workloads.} IoTDB achieves 23.6\,M pts/s
-sequential write throughput at large scale --- 59$\times$ more than TimescaleDB --- but
+sequential write throughput at large scale (59$\times$ more than TimescaleDB), but
 requires approximately 15\,GB of RAM and offers no relational join support.
 TimescaleDB's \texttt{time\_bucket()} downsampling query stays below 1\,ms across 100$\times$
 data growth, making it the strongest choice for dashboard analytics, while its WAL-based
@@ -46,8 +46,8 @@ scale: \textbf{H} (strong), \textbf{M} (moderate), \textbf{L} (weak).
 \begin{table*}[t]
   \centering
   \caption{Final comparison of Apache IoTDB, InfluxDB, and TimescaleDB across key dimensions
-           for IoT deployments. \textbf{H}~=~strong, \textbf{M}~=~moderate, \textbf{L}~=~weak.
-           Latency values are at small scale, tuned configuration.}
+    for IoT deployments. \textbf{H}~=~strong, \textbf{M}~=~moderate, \textbf{L}~=~weak.
+  Latency values are at small scale, tuned configuration.}
   \label{tab:final}
   \begin{tabular}{lcccl}
     \hline
@@ -110,24 +110,24 @@ Several directions remain open for follow-on investigation:
 
 \begin{itemize}
   \item \textbf{Distributed deployments.} Evaluating multi-node IoTDB clusters, InfluxDB
-  Clustered, and TimescaleDB with Citus extension would quantify how horizontal scaling
-  affects the write-vs-read trade-offs observed here and whether network overhead changes
-  the relative protocol costs.
+    Clustered, and TimescaleDB with Citus extension would quantify how horizontal scaling
+    affects the write-vs-read trade-offs observed here and whether network overhead changes
+    the relative protocol costs.
 
-  \item \textbf{Real-world datasets.} Testing with large-scale industrial datasets ---
-  vehicle telemetry, power-grid sensor data, or manufacturing process monitoring at
-  billion-point scale --- would validate whether IoTDB's sublinear value-filter scaling
-  continues to hold and reveal new patterns not visible in the synthetic workloads used here.
+  \item \textbf{Real-world datasets.} Testing with large-scale industrial datasets
+    (vehicle telemetry, power-grid sensor data, or manufacturing process monitoring at
+    billion-point scale) would validate whether IoTDB's sublinear value-filter scaling
+    continues to hold and reveal new patterns not visible in the synthetic workloads used here.
 
   \item \textbf{Durability and high-availability overhead.} Measuring the throughput and
-  latency cost of replication, failover, and crash-recovery scenarios would be essential
-  for any production deployment decision. IoTDB's asynchronous write path makes this
-  particularly important.
+    latency cost of replication, failover, and crash-recovery scenarios would be essential
+    for any production deployment decision. IoTDB's asynchronous write path makes this
+    particularly important.
 
   \item \textbf{Version evolution.} All three databases release updates frequently. IoTDB~2.x,
-  InfluxDB~3.0 (with its new columnar storage engine based on Apache Arrow and DataFusion),
-  and TimescaleDB~2.x introduce architectural changes that could materially alter the
-  trade-offs described in this study.
+    InfluxDB~3.0 (with its new columnar storage engine based on Apache Arrow and DataFusion),
+    and TimescaleDB~2.x introduce architectural changes that could materially alter the
+    trade-offs described in this study.
 \end{itemize}
 
 The benchmark scripts, Docker configurations, and data files produced by this study are

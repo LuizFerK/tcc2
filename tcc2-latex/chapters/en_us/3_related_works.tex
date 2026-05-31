@@ -116,7 +116,7 @@ studies from 2017 highlights that this is not a newly emerging concern, yet the 
 of the databases themselves means that older findings may no longer apply to current versions.
 
 \textbf{Database coverage.} InfluxDB is present in every reviewed study, serving as the de
-facto reference point for TSDB comparisons --- even in works where another system is the
+facto reference point for TSDB comparisons, even in works where another system is the
 primary subject, as in~\cite{wang2023iotdb}. The presence of TimescaleDB in three of five
 studies reflects its growing relevance as a SQL-compatible alternative. The most notable
 trend is the emergence of Apache IoTDB: appearing only in the two most recent studies
@@ -125,7 +125,7 @@ either significant performance improvements in recent versions or a growing reco
 its strengths for IoT-oriented workloads.
 
 \textbf{Reproducibility.} This is the most significant methodological gap in the reviewed
-literature. Of five performance studies, only one --- \cite{pereira2023mulletbench} ---
+literature. Of five performance studies, only one, \cite{pereira2023mulletbench},
 is fully reproducible, with all code and configurations publicly available on GitHub.
 Two studies (\cite{lima2024avaliando} and \cite{wang2023iotdb}) offer partial reproducibility
 through Docker containers or described configurations, while the remaining two
@@ -156,7 +156,7 @@ other workloads; it does, however, motivate the inclusion of both databases in a
 contemporary comparative evaluation.
 
 In summary, the reviewed literature reveals three key gaps that the present work addresses:
-(1) insufficient reproducibility --- only one of five studies is fully replicable; (2) limited
+(1) insufficient reproducibility: only one of five studies is fully replicable; (2) limited
 coverage of IoTDB alongside InfluxDB and TimescaleDB in the same controlled benchmark; and
 (3) the absence of a systematic analysis of how methodology choices (resource isolation,
 database tuning) affect reported conclusions. This study contributes to closing all three gaps.

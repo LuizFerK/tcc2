@@ -1,4 +1,5 @@
 .nix-built-iot-benchmark
 **/__pycache__
 tcc2-latex.zip
-thesis.pdf
+thesis-en-us.pdf
+thesis-pt-br.pdf

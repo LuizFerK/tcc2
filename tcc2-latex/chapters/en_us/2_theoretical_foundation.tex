@@ -9,15 +9,15 @@ systems; time series databases and their specific architectures; and benchmarkin
 
 According to~\cite{Ramakrishnan2003}, a database can be defined as a collection of data,
 typically describing the activities of one or more related organizations. This encompasses
-everything from information about entities --- such as students and courses in a university ---
+everything from information about entities (such as students and courses in a university)
 to the relationships between those entities, such as student enrollments in specific courses.
 \cite{Silberschatz2020} further argues that the primary goal of a database system must be to
 provide a way of storing and retrieving information that is both convenient and efficient.
 
 The management of this data is performed by a Database Management System (DBMS), which is
 software designed to assist in the maintenance and use of large data collections~\cite{Ramakrishnan2003}.
-The need for such systems has grown rapidly, as the alternative --- storing data in flat files
-and writing application-specific management code --- produces solutions that are not transferable
+The need for such systems has grown rapidly, as the alternative of storing data in flat files
+and writing application-specific management code produces solutions that are not transferable
 across applications and offer no guarantees of integrity or concurrent access safety.
 
 As emphasized by~\cite{Ramakrishnan2003}, the success of an organization depends increasingly
@@ -34,12 +34,12 @@ data integrity and security (the DBMS enforces constraints and restricts unautho
 and support for concurrent access and crash recovery.
 
 The relational model, proposed by Codd in 1970, is simple and elegant: a database is viewed
-as a collection of relations --- tables with rows and columns --- a representation so intuitive
+as a collection of relations (tables with rows and columns), a representation so intuitive
 that even non-specialist users can understand the stored content~\cite{Ramakrishnan2003}.
 The structure of each relation consists of a schema (field names and their domains) and an
 instance (the set of tuples, or records). A key property is that each relation is a set of
-unique tuples, guaranteeing no duplicate records. Integrity constraints --- conditions specified
-on the schema that restrict storable data --- ensure that only valid database instances can
+unique tuples, guaranteeing no duplicate records. Integrity constraints, defined as conditions specified
+on the schema that restrict storable data, ensure that only valid database instances can
 be persisted. Among these, primary key constraints uniquely identify tuples, while foreign key
 constraints maintain consistency when information in one relation references another.
 
@@ -98,17 +98,17 @@ Figure~\ref{fig:temporal_data} illustrates a time series of meteorological measu
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=\columnwidth]{figures/dado_temporal}
+  \includegraphics[width=\columnwidth]{figures/en_us/dado_temporal}
   \caption{Example of temporal data: weather conditions.
-           The highlighted point represents a single data record captured at a specific instant.}
+  The highlighted point represents a single data record captured at a specific instant.}
   \label{fig:temporal_data}
 \end{figure}
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=\columnwidth]{figures/registro_temporal}
+  \includegraphics[width=\columnwidth]{figures/en_us/registro_temporal}
   \caption{Example of a TSDB table representing the weather time series.
-           Each row corresponds to one timestamped measurement.}
+  Each row corresponds to one timestamped measurement.}
   \label{fig:tsdb_record}
 \end{figure}
 
@@ -121,12 +121,12 @@ either continuous or discrete. This makes it possible to model data streams that
 numerical values as time series, enabling time series analysis techniques to be applied to
 certain types of data streams. A key characteristic is that time series datasets are typically
 used in situations where measurements, once made, are not revised or updated but instead
-accumulated --- new data is added for each measured parameter at each new point in time,
+accumulated; new data is added for each measured parameter at each new point in time,
 as noted by~\cite{Dunning2014}.
 
 The historical significance of time series analysis is remarkable, with examples dating back to
 the 19th century. \cite{Dunning2014} cite the pioneering work of Matthew Fontaine Maury, who
-analyzed ship logbooks to create wind and current charts --- demonstrating how the collective
+analyzed ship logbooks to create wind and current charts, demonstrating how the collective
 analysis of time series data accumulated over many years across many ships can reveal patterns
 valuable for maritime navigation. This historical example illustrates how time series datasets
 can reveal trends and patterns not apparent in point-in-time measurements.
@@ -233,7 +233,7 @@ For practical application, benchmarks must be interpreted carefully.
 for complex software like a DBMS. A good benchmark should include a comprehensive suite of
 tasks carefully selected to cover a specific application domain and to test the DBMS capabilities
 critical for that domain. Analysts should weight benchmark tasks according to how closely they
-resemble the critical operations of the intended application --- and, when standard benchmarks
+resemble the critical operations of the intended application; and when standard benchmarks
 do not match the actual workload closely enough, custom benchmarks that adapt or replace
 standard tasks with more representative operations should be considered.
 
@@ -241,5 +241,5 @@ Reproducibility is an essential but often neglected property of database benchma
 As demonstrated in the related works reviewed in this study, only a minority of published
 comparative evaluations provide the scripts and exact configurations needed for independent
 replication~\cite{pereira2023mulletbench}. This limits the ability to validate results,
-compare findings across studies, and build on prior work --- a gap this study directly
+compare findings across studies, and build on prior work, a gap this study directly
 addresses through its fully scripted and publicly available benchmark infrastructure.

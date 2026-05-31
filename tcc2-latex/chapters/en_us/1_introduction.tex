@@ -10,7 +10,7 @@ Figure~\ref{fig:iot_projection}.
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=\columnwidth]{figures/projecao-iot}
+  \includegraphics[width=\columnwidth]{figures/en_us/projecao-iot}
   \caption{IoT: devices in use globally. Source:~\cite{thierer2015iot}.}
   \label{fig:iot_projection}
 \end{figure}
@@ -34,7 +34,7 @@ As argued by~\cite{naqvi2017influxdb}, traditional relational databases suffer f
 inefficiencies and memory limitations when dealing with large volumes of temporal data, whereas
 TSDBs maintain high performance because they were built to treat time as their primary concern.
 Beyond raw throughput, TSDBs offer specialized compression mechanisms, time-interval data
-co-location, and automatic retention policies that reduce operational costs --- features that
+co-location, and automatic retention policies that reduce operational costs, features that
 are indispensable for IoT applications where continuous sensor measurements demand scalability
 and economical resource usage~\cite{Dunning2014}.
 
@@ -57,8 +57,8 @@ allow independent replication~\cite{pereira2023mulletbench,shah2022performance,n
 Without reproducible methodology, findings cannot be independently validated, results are
 difficult to compare across studies, and experiments cannot be adapted to new hardware or
 software versions. This work directly addresses that gap by making the complete benchmark
-infrastructure --- all orchestration scripts, container definitions, build environment, and
-parameterized Java benchmark clients --- publicly available alongside the results.
+infrastructure (all orchestration scripts, container definitions, build environment, and
+parameterized Java benchmark clients) publicly available alongside the results.
 
 This paper presents a controlled, reproducible comparison of Apache IoTDB, InfluxDB~2.7,
 and TimescaleDB across nine workload patterns representative of IoT deployments and three
@@ -73,13 +73,13 @@ to validate which findings reflect genuine database behavior.
 The specific objectives of this work are:
 \begin{itemize}
   \item Measure write and read performance of three TSDBs across workloads representative of
-  real IoT deployments;
+    real IoT deployments;
   \item Analyze how performance characteristics scale with data volume across three scales
-  spanning 100$\times$ in data size;
+    spanning 100$\times$ in data size;
   \item Identify the architectural mechanisms that explain the observed performance differences;
   \item Quantify the impact of benchmark methodology choices on reported results; and
   \item Provide a reproducible benchmark infrastructure that enables future researchers to
-  independently validate and extend these results.
+    independently validate and extend these results.
 \end{itemize}
 
 The remainder of this paper is organized as follows.

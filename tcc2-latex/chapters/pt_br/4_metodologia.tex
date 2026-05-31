@@ -1,0 +1,293 @@
+\section{Metodologia}
+\label{sec:methodology}
+
+\subsection{Projeto de Pesquisa}
+
+Este trabalho adota uma abordagem experimental controlada para comparar três bancos de dados de
+séries temporais em nove padrões distintos de carga de trabalho IoT e três escalas de volume de
+dados. A avaliação cobre vazão de escrita, latência por operação (média e percentil 99) e consumo
+de recursos (CPU e memória) para cada combinação de banco de dados, tipo de carga de trabalho e
+escala. O objetivo é caracterizar quais compromissos arquiteturais favorecem quais perfis de
+aplicação, indo além de rankings agregados para explicar \textit{por que} cada banco de dados
+tem o desempenho que tem.
+
+Um objetivo central de projeto, além da medição de desempenho, é a \textit{reprodutibilidade}.
+A literatura comparativa revisada neste trabalho revela uma lacuna sistêmica: dos cinco estudos
+de desempenho recentes de BDSTs analisados, apenas um publicou scripts e configurações
+suficientes para replicação independente~\cite{pereira2023mulletbench}. Os demais ou omitiram
+configurações completamente, descreveram suas configurações em prosa vaga demais para seguir
+mecanicamente, ou utilizaram cadeias de ferramentas que requerem acesso
+institucional~\cite{shah2022performance,naqvi2017influxdb,lima2024avaliando,wang2023iotdb}.
+Este trabalho trata a reprodutibilidade como uma saída de primeira classe: cada componente
+necessário para replicar os resultados está fixado em versão e publicamente disponível junto
+com este artigo.
+
+\subsection{Seleção dos Bancos de Dados}
+
+Os três bancos de dados foram selecionados para representar abordagens arquiteturais distintas
+para armazenamento de séries temporais, cada um identificado como sistema líder na literatura
+revisada.
+
+\textbf{InfluxDB 2.7} é o padrão de referência de facto na pesquisa comparativa de BDSTs,
+aparecendo em quatro dos cinco estudos de desempenho revisados~\cite{naqvi2017influxdb,
+shah2022performance,lima2024avaliando,wang2023iotdb}. Ele usa um motor de armazenamento TSM
+(Time-Structured Merge Tree) que organiza dados em blocos comprimidos ordenados por tempo. A
+ingestão ocorre via API HTTP com protocolo de linha; consultas analíticas usam a linguagem de
+expressão Flux. A ubiquidade do InfluxDB em benchmarks anteriores o torna uma âncora essencial
+de comparação: qualquer novo estudo que o omita perde comparabilidade com a literatura existente.
+
+\textbf{Apache IoTDB 1.3.0}~\cite{wang2023iotdb} emergiu como líder de desempenho nos dois
+estudos comparativos mais recentes~\cite{pereira2023mulletbench,wang2023iotdb}, representando
+uma mudança em relação à dominância do InfluxDB reportada em benchmarks mais antigos.
+Desenvolvido na Universidade Tsinghua especificamente para IoT industrial, usa um formato de
+arquivo colunar personalizado (TsFile) e um protocolo binário Thrift RPC
+(SESSION\_BY\_TABLET). A ingestão de escritas é armazenada em buffer no heap gerenciado pela
+JVM antes de ser descarregada para o disco como segmentos colunares ordenados, possibilitando
+vazão excepcionalmente alta para fluxos de séries temporais ordenadas. Sua rápida ascensão em
+benchmarks recentes, combinada com sua abordagem arquitetural distinta, tornou-o candidato
+natural para este estudo.
+
+\textbf{TimescaleDB} estende o PostgreSQL~15 com capacidades de séries temporais: particionamento
+automático de hipertabela por intervalo de tempo, a função de agregação \texttt{time\_bucket()}
+para subamostragem e compressão opcional por bloco. Ele mantém o motor relacional completo com
+durabilidade baseada em WAL, controle de concorrência MVCC, índices B-tree e compatibilidade
+completa com SQL. Para organizações com infraestrutura PostgreSQL existente, ou para aplicações
+que exigem junções entre dados de séries temporais e relacionais, ele fornece um caminho para
+a capacidade de séries temporais sem abandonar o ecossistema relacional. Aparece em três dos
+cinco benchmarks revisados~\cite{shah2022performance,lima2024avaliando,wang2023iotdb}.
+
+O PostgreSQL simples, sem a extensão TimescaleDB, foi explicitamente excluído. O TimescaleDB o
+supera para este domínio: qualquer conclusão extraída do TimescaleDB é diretamente aplicável a
+uma implantação PostgreSQL, e incluir ambos duplicaria os testes sem produzir informações
+adicionais.
+
+\subsection{Ferramenta de Benchmark}
+\label{sec:benchmark-tool}
+
+O gerador de carga de trabalho é o \textit{iot-benchmark}~\cite{iotbenchmark}, desenvolvido na
+Universidade Tsinghua, que vem com clientes Java específicos para os três bancos de dados em
+avaliação. Esse suporte nativo a múltiplos bancos de dados significa que cada carga de trabalho
+é expressa no protocolo correto para cada alvo: a interface Thrift SESSION\_BY\_TABLET para
+IoTDB, o protocolo de linha HTTP para InfluxDB e uma conexão JDBC para TimescaleDB. Uma
+interface consistente e parametrizada garante que as diferenças de desempenho medidas reflitam
+os próprios bancos de dados, e não a camada de benchmarking.
+
+Ferramentas alternativas foram avaliadas. O Time Series Benchmark Suite (TSBS) oferece um
+framework maduro para múltiplos bancos de dados, mas carece de suporte nativo ao IoTDB no
+momento desta escrita. O Apache JMeter, utilizado em Lima et al.~\cite{lima2024avaliando},
+lida bem com sistemas baseados em HTTP, mas requer scripts personalizados para interfaces
+Thrift e JDBC, introduzindo potencial sobrecarga específica da ferramenta. A interface uniforme
+do iot-benchmark e a semântica de carga de trabalho específica para IoT (clientes
+  concorrentes organizados em hierarquias de dispositivos e sensores, tamanhos de lote
+configuráveis e geração de dados fora de ordem distribuída por Poisson) tornaram-no a
+escolha mais adequada para este estudo.
+
+A ferramenta produz duas matrizes de saída estruturadas que são analisadas pela camada de
+orquestração. A Matriz de Resultado reporta operações totais, tempo decorrido e vazão agregada
+(pts/s). A Matriz de Latência reporta latências média, mínima, máxima e por percentil por tipo
+de operação, fornecendo os dados de comportamento de cauda por operação necessários para
+avaliar cargas de trabalho IoT em tempo real.
+
+\subsection{Projeto das Cargas de Trabalho}
+\label{sec:workload}
+
+O benchmark cobre nove tipos de carga de trabalho em duas categorias, projetados para abranger
+o espectro de padrões encontrados em sistemas IoT em produção.
+
+\subsubsection{Testes de Escrita}
+
+Quatro testes de escrita exercitam padrões de ingestão distintos:
+
+\begin{description}
+  \item[\texttt{write}] Ingestão sequencial de linha de base com carimbos de tempo ordenados e
+    o tamanho de lote padrão de 100 linhas por requisição. Mede a vazão bruta de escrita em
+    condições ideais e ordenadas.
+
+  \item[\texttt{out-of-order}] Vinte por cento dos pontos de dados chegam com carimbos de tempo
+    mais antigos do que a fronteira de ingestão atual, modelado como um atraso distribuído por
+    Poisson. Simula sensores IoT que perdem conectividade e depois reproduzem leituras
+    armazenadas em buffer, um padrão ubíquo em implantações industriais e de campo onde os
+    sensores operam sobre redes celulares ou LPWAN não confiáveis.
+
+  \item[\texttt{batch-small}] \texttt{BATCH\_SIZE=1}: um ponto de dado por requisição de
+    escrita. Isola a sobrecarga de protocolo por requisição: uma rodada HTTP mais análise do
+    protocolo de linha para InfluxDB, um ciclo completo cliente-servidor PostgreSQL mais flush
+    do WAL para TimescaleDB e uma única chamada Thrift RPC para IoTDB.
+
+  \item[\texttt{batch-large}] \texttt{BATCH\_SIZE=1000}: 1.000 pontos de dados por requisição.
+    Testa a eficiência de carregamento em lote e revela o teto prático da arquitetura de lote de
+    cada banco de dados. A razão entre a vazão de \texttt{batch-small} e \texttt{batch-large}
+    quantifica diretamente quanto a sobrecarga por requisição domina sobre o custo de
+    transferência de dados.
+\end{description}
+
+Cada teste de escrita limpa e repovooa o banco de dados antes de ser executado, garantindo
+medições independentes e sem histórico.
+
+\subsubsection{Testes de Leitura}
+
+Cinco testes de leitura cobrem os padrões de consulta mais comuns em pipelines de análise IoT:
+
+\begin{description}
+  \item[\texttt{latest-point}] Recupera o valor mais recente para cada sensor. Esta é a consulta
+    fundamental de monitoramento em tempo real: um painel ou sistema de alertas que consulta
+    continuamente o estado atual do dispositivo.
+
+  \item[\texttt{downsample}] Executa consultas \texttt{GROUP~BY} de janela de tempo calculando
+    médias em janelas de tempo fixas. Modela o caso de uso padrão de agregação em painel, onde
+    leituras brutas de sensores são consolidadas em resumos de nível de minuto ou hora.
+
+  \item[\texttt{range-query}] Recupera todos os pontos de dados dentro de uma janela de tempo
+    especificada, sem filtragem por valor. Modela exportação de dados históricos, pipelines de
+    reprodução e ingestão para retraining de modelos.
+
+  \item[\texttt{value-filter}] Aplica predicados de valor como \texttt{temperature~>~85.0},
+    incluindo agregações sobre intervalos filtrados por valor. Modela alertas por limite:
+    ``encontrar todas as leituras de sensores que excedem o nível de alarme na última hora.''
+    O filtro de valor é o tipo de consulta mais discriminatório arquiteturalmente neste benchmark
+    porque não pode ser respondido a partir de índices baseados em tempo: cada banco de dados
+    deve manter um índice secundário ou varrer todos os valores armazenados.
+
+  \item[\texttt{read}] Executa todos os dez tipos de consulta suportados pelo iot-benchmark
+    com peso igual, fornecendo uma linha de base abrangente de carga de trabalho mista.
+\end{description}
+
+Todos os testes de leitura operam no conjunto de dados carregado pelo teste de escrita de
+linha de base anterior.
+
+\subsection{Parâmetros de Escala}
+\label{sec:scale-params}
+
+Três escalas de volume de dados são definidas para expor como as características de desempenho
+evoluem com o tamanho do conjunto de dados. A Tabela~\ref{tab:scales} resume os parâmetros.
+
+\begin{table}[ht]
+  \centering
+  \caption{Parâmetros de escala do benchmark. Todas as escalas usam um tamanho de lote padrão
+    de 100 linhas por requisição. A escala grande contém ${\sim}100\times$ mais dados
+  que a pequena.}
+  \label{tab:scales}
+  \begin{tabular}{lrrrrr}
+    \hline
+    \textbf{Escala} & \textbf{Clientes} & \textbf{Dispositivos} & \textbf{Sensores} & \textbf{Laços} & \textbf{Duração} \\
+    \hline
+    Pequena &  5 & 10 & 10 & 1.000 & ${\sim}$5 min \\
+    Média   &  5 & 10 & 10 & 5.000 & ${\sim}$30 min \\
+    Grande  & 10 & 50 & 20 & 5.000 & ${\sim}$2 h \\
+    \hline
+  \end{tabular}
+\end{table}
+
+A escala grande contém aproximadamente 20$\times$ mais dados que a média e 100$\times$ mais
+que a pequena, impulsionada tanto por uma contagem de laços maior quanto por uma topologia
+expandida (10 clientes $\times$ 50 dispositivos $\times$ 20 sensores versus
+5~$\times$~10~$\times$~10). A medição em múltiplas escalas é essencial porque várias
+características fundamentais (saturação de compilação JIT da JVM, esgotamento de buffer,
+padrões de paralisação de checkpoint e escalonamento de varredura de índice) só se
+manifestam ou se tornam dominantes em volumes de dados mais elevados. Um benchmark de escala
+única arrisca tirar conclusões que se aplicam apenas a um intervalo estreito de dados.
+
+\subsection{Infraestrutura e Reprodutibilidade}
+\label{sec:infrastructure}
+
+A reprodutibilidade neste projeto repousa em três componentes.
+
+\textbf{Docker Compose}~\cite{docker} gerencia os contêineres de banco de dados com versões
+de imagem fixadas: \texttt{apache/iotdb:1.3.0-standalone}, \texttt{influxdb:2.7-alpine} e
+\texttt{timescale/timescaledb:latest-pg15}. Os contêineres são iniciados e parados
+\textit{sequencialmente}: apenas um banco de dados está ativo a qualquer momento. Esse design,
+introduzido após as execuções iniciais revelarem artefatos de contenção de recursos entre bancos
+de dados, dá a cada banco de dados acesso exclusivo à CPU, largura de banda de memória e E/S
+do host.
+
+\textbf{Nix flake}~\cite{nixos} fornece um ambiente de desenvolvimento declarativo com arquivo
+de lock fixado. Executar \texttt{nix~develop} inicia um shell com versões exatamente especificadas
+de Java~17, Maven, Python~3 e ferramentas Docker. Executar \texttt{nix~run~.\#build} compila
+todos os três clientes Java de benchmark em uma única etapa. Toda dependência transitiva de
+construção é registrada no arquivo de lock do flake, eliminando as falhas de variação de
+ambiente que tipicamente prejudicam replicações de benchmark.
+
+\textbf{CLI Python} (\texttt{benchmark.py}) orquestra o fluxo de trabalho completo do benchmark
+programaticamente. Ele inicia o contêiner alvo, escreve os parâmetros corretos no arquivo
+\texttt{conf/config.properties} do cliente Java, invoca o cliente Java, consulta
+\texttt{docker~stats} em intervalos de um segundo para coletar amostras de CPU e memória, e
+acrescenta uma linha de resultado estruturada à tabela de saída após cada teste. Uma execução
+completa de nove testes e três bancos de dados em qualquer escala se resume a:
+
+\begin{verbatim}
+  python3 benchmark.py --scale large
+\end{verbatim}
+
+Esse nível de automação torna os resultados rastreáveis a um ambiente de execução específico e
+versionado. Qualquer pesquisador com o repositório e o Docker disponíveis pode reproduzir o
+conjunto de dados completo do zero.
+
+\subsection{Métricas}
+\label{sec:metrics}
+
+A Tabela~\ref{tab:metrics} descreve as métricas de desempenho coletadas para cada execução.
+
+\begin{table}[ht]
+  \centering
+  \caption{Métricas de desempenho coletadas por execução de benchmark.}
+  \label{tab:metrics}
+  \begin{tabular}{ll}
+    \hline
+    \textbf{Métrica} & \textbf{Fonte} \\
+    \hline
+    Vazão (pts/s)            & Matriz de Resultado do iot-benchmark \\
+    Latência média (ms)      & Matriz de Latência do iot-benchmark \\
+    Latência P99 (ms)        & Matriz de Latência do iot-benchmark \\
+    CPU média/pico (\%)      & \texttt{docker stats} (intervalo de 1\,s) \\
+    Memória média/pico (MB)  & RSS do \texttt{docker stats} \\
+    Tempo de parede (s)      & Duração da execução \\
+    \hline
+  \end{tabular}
+\end{table}
+
+Para os testes de escrita, a vazão mede pontos de dados ingeridos por segundo. Para os testes
+de leitura, a vazão soma as contagens de pontos retornados por todos os tipos de consulta ativos.
+Como diferentes tipos de consulta retornam quantidades fundamentalmente diferentes de dados por
+chamada: uma consulta de intervalo retorna centenas de pontos, uma consulta de último valor
+retorna exatamente um. A \textit{latência} é portanto usada como a métrica primária de comparação de
+leitura em toda a Seção~\ref{sec:experiments}.
+
+A latência P99 captura o comportamento de cauda: 99\% das operações foram concluídas mais
+rápido que esse valor. A diferença entre a média e o P99 revela a consistência do tempo de
+resposta. Uma grande diferença sinaliza outliers severos ocasionais que produziriam jitter
+visível em aplicações IoT de monitoramento ao vivo, mesmo quando a latência média parece
+aceitável.
+
+\subsection{Ajuste de Configuração}
+\label{sec:tuning}
+
+Após completar as execuções iniciais de benchmark, duas melhorias metodológicas foram aplicadas
+antes de reexecutar todas as escalas:
+
+\begin{enumerate}
+  \item \textbf{Ciclo de vida sequencial de contêineres.} A configuração original iniciava todos
+    os três contêineres de banco de dados simultaneamente. Embora cada teste fosse executado em
+    um banco de dados por vez, os contêineres ociosos competiam pelo cache de páginas do SO e
+    largura de banda de E/S. O TimescaleDB acumulou vários gigabytes de cache de páginas durante
+    as sessões de escrita do IoTDB, produzindo medições de memória profundamente enganosas. A JVM
+    do IoTDB pré-alocou seu heap máximo configurado durante o tempo ocioso pela mesma razão.
+    A configuração corrigida inicia cada contêiner imediatamente antes de seus testes e o para
+    imediatamente após.
+
+  \item \textbf{Ajuste no nível do banco de dados.} O TimescaleDB recebeu uma configuração
+    pgtune~\cite{pgtune} para PostgreSQL~15 direcionada ao hardware desta máquina:
+    \texttt{shared\_buffers=8GB}, \texttt{work\_mem=27413kB},
+    \texttt{maintenance\_work\_mem=2GB}, \texttt{effective\_io\_concurrency=1000} e
+    \texttt{checkpoint\_completion\_target=0.9}. Essas configurações são a linha de base padrão
+    para qualquer implantação PostgreSQL em produção nesta classe de hardware; os padrões são
+    ajustados para ambientes com RAM mínima e produzem desempenho artificialmente ruim em
+    máquinas capazes. O teto do cache de escrita TSM do InfluxDB foi elevado do padrão de 1\,GB
+    para 8\,GB para corresponder à RAM disponível. Um limite de 28\,GB de memória foi aplicado a
+    cada contêiner.
+\end{enumerate}
+
+Tanto os resultados originais quanto os ajustados são reportados e analisados na escala pequena,
+onde o contraste é mais instrutivo. Os resultados de escala média e grande utilizam a metodologia
+ajustada ao longo. A comparação entre as execuções original e ajustada serve a um duplo
+propósito: quantifica a magnitude dos artefatos de contenção e valida quais características de
+desempenho são propriedades arquiteturais genuínas de cada banco de dados.
