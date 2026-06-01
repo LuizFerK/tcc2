@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Um Benchmark Reprodutivel do Apache IoTDB, InfluxDB e TimescaleDB para Cargas de Trabalho IoT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  :root {
+    --canvas: #fdfcfc;
+    --surface-soft: #f8f7f7;
+    --surface-card: #f1eeee;
+    --surface-dark: #201d1d;
+    --surface-dark-elevated: #302c2c;
+    --hairline: rgba(15, 0, 0, 0.12);
+    --hairline-strong: #646262;
+    --ink: #201d1d;
+    --charcoal: #302c2c;
+    --body: #424245;
+    --mute: #646262;
+    --on-dark: #fdfcfc;
+    --ash: #9a9898;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    background: var(--canvas);
+    font-family: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--ink);
+    overflow: hidden;
+  }
+
+  /* Slide container */
+  .deck {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    background: var(--canvas);
+    display: flex;
+    flex-direction: column;
+    padding: 48px 80px 80px 80px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    overflow: hidden;
+  }
+
+  .slide.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* Slide header / label */
+  .slide-label {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 2;
+    color: var(--mute);
+    border-bottom: 1px solid var(--hairline);
+    padding-bottom: 8px;
+    margin-bottom: 32px;
+    letter-spacing: 0;
+  }
+
+  /* Typography */
+  .display {
+    font-size: 38px;
+    font-weight: 700;
+    line-height: 1.5;
+    color: var(--ink);
+    letter-spacing: 0;
+  }
+
+  .display-md {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.5;
+    color: var(--ink);
+    letter-spacing: 0;
+  }
+
+  .heading {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.5;
+    color: var(--ink);
+    letter-spacing: 0;
+  }
+
+  .body-text {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--body);
+    letter-spacing: 0;
+  }
+
+  .caption {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 2;
+    color: var(--mute);
+    letter-spacing: 0;
+  }
+
+  /* Hairline divider */
+  .hairline {
+    border: none;
+    border-top: 1px solid var(--hairline);
+    margin: 0;
+  }
+
+  /* Lists with [+] markers */
+  .list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .list li {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--body);
+    padding: 8px 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .list li:last-child {
+    border-bottom: none;
+  }
+
+  .list li::before {
+    content: '[+] ';
+    color: var(--ink);
+    font-weight: 700;
+  }
+
+  .list-numbered {
+    list-style: none;
+    padding: 0;
+    counter-reset: item;
+  }
+
+  .list-numbered li {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--body);
+    padding: 8px 0;
+    border-bottom: 1px solid var(--hairline);
+    counter-increment: item;
+  }
+
+  .list-numbered li:last-child {
+    border-bottom: none;
+  }
+
+  .list-numbered li::before {
+    content: counter(item) '. ';
+    color: var(--ink);
+    font-weight: 700;
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--body);
+  }
+
+  table th {
+    font-weight: 700;
+    color: var(--ink);
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--hairline-strong);
+    border-right: 1px solid var(--hairline);
+    white-space: nowrap;
+  }
+
+  table th:last-child {
+    border-right: none;
+  }
+
+  table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--hairline);
+    border-right: 1px solid var(--hairline);
+    vertical-align: top;
+  }
+
+  table td:last-child {
+    border-right: none;
+  }
+
+  table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .table-wrapper {
+    border: 1px solid var(--hairline);
+    border-radius: 0;
+    overflow: hidden;
+  }
+
+  /* Code block */
+  .code-block {
+    background: var(--surface-card);
+    border-radius: 4px;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--ink);
+    font-family: inherit;
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  /* TUI mockup */
+  .tui-mockup {
+    background: var(--surface-dark);
+    border-radius: 0;
+    padding: 24px 28px;
+    color: var(--on-dark);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.5;
+    white-space: pre;
+    font-family: inherit;
+  }
+
+  .tui-mockup .tui-prompt {
+    background: var(--surface-dark-elevated);
+    border-radius: 4px;
+    padding: 6px 12px;
+    margin-top: 12px;
+    display: inline-block;
+    font-size: 13px;
+    color: var(--on-dark);
+  }
+
+  .tui-accent {
+    color: #30d158;
+    font-weight: 700;
+  }
+
+  .tui-mute {
+    color: var(--ash);
+  }
+
+  /* Image containers */
+  .img-container {
+    border: 1px solid var(--hairline);
+    border-radius: 0;
+    overflow: hidden;
+    display: inline-block;
+  }
+
+  .img-container img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Navigation */
+  .nav {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 100;
+  }
+
+  .nav-btn {
+    background: var(--ink);
+    color: var(--on-dark);
+    border: none;
+    border-radius: 4px;
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 2;
+    cursor: pointer;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.1s;
+  }
+
+  .nav-btn:active {
+    background: #0f0000;
+  }
+
+  .nav-btn:disabled {
+    background: var(--surface-card);
+    color: var(--ash);
+    cursor: default;
+  }
+
+  .slide-counter {
+    position: fixed;
+    bottom: 30px;
+    right: 40px;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 2;
+    color: var(--mute);
+    font-family: inherit;
+    z-index: 100;
+  }
+
+  /* Layout helpers */
+  .slide-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  .section-gap {
+    height: 32px;
+    flex-shrink: 0;
+  }
+
+  .section-gap-lg {
+    height: 48px;
+    flex-shrink: 0;
+  }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: start;
+  }
+
+  .two-col-img {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .section-block {
+    border-top: 1px solid var(--hairline);
+    padding-top: 16px;
+  }
+
+  /* Strong/bold inline */
+  strong {
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  /* Slide 1 specific */
+  .hero-title {
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--ink);
+    max-width: 800px;
+  }
+
+  /* Slide metadata list (capa) */
+  .meta-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .meta-list li {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--body);
+    padding: 6px 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .meta-list li:last-child {
+    border-bottom: none;
+  }
+
+  /* Indent sublists */
+  .sublist {
+    list-style: none;
+    padding: 0;
+    margin-top: 8px;
+  }
+
+  .sublist li {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--body);
+    padding: 6px 0 6px 24px;
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .sublist li:last-child {
+    border-bottom: none;
+  }
+
+  .sublist li::before {
+    content: '[+] ';
+    color: var(--mute);
+    font-weight: 400;
+  }
+
+  /* Section heading with hairline */
+  .section-heading {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.5;
+    color: var(--ink);
+    margin-bottom: 12px;
+  }
+
+  /* Highlight box */
+  .highlight-box {
+    background: var(--surface-soft);
+    border: 1px solid var(--hairline);
+    padding: 12px 16px;
+    border-radius: 0;
+  }
+
+  /* Tag / badge */
+  .badge {
+    display: inline-block;
+    background: var(--surface-dark);
+    color: var(--on-dark);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 2;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  /* Inline code */
+  code {
+    background: var(--surface-card);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--ink);
+  }
+
+  /* Result number highlight */
+  .result-num {
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  /* Overflow scroll for slide content when needed */
+  .slide-scroll {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--hairline) transparent;
+  }
+
+  /* flex row */
+  .flex-row {
+    display: flex;
+    flex-direction: row;
+    gap: 32px;
+    align-items: flex-start;
+  }
+
+  .flex-col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* Finding block */
+  .finding-block {
+    border-top: 1px solid var(--hairline);
+    padding-top: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .finding-block + .finding-block {
+    border-top: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+  <!-- ======================== SLIDE 1 — Capa ======================== -->
+  <div class="slide active" id="slide-1">
+    <div class="slide-label">TCC2 — Defesa — UFFS Ciencia da Computacao</div>
+    <div class="slide-content">
+      <div class="hero-title">Um Benchmark Reprodutivel do Apache IoTDB, InfluxDB e TimescaleDB para Cargas de Trabalho IoT</div>
+      <div class="section-gap"></div>
+      <hr class="hairline">
+      <div class="section-gap"></div>
+      <div class="flex-row" style="align-items: flex-start; gap: 64px;">
+        <div>
+          <ul class="meta-list">
+            <li><strong>Luiz Fernando Klein</strong></li>
+            <li>Curso de Ciencia da Computacao &mdash; UFFS</li>
+            <li>Chapeco, 2026</li>
+            <li>Orientador: [nome do orientador]</li>
+          </ul>
+        </div>
+        <div class="tui-mockup" style="min-width: 360px; flex-shrink: 0;">
+<span class="tui-mute">$ </span>python3 benchmark.py --scale large
+
+<span class="tui-accent">[+]</span> IoTDB        <span class="tui-accent">23.6M</span> pts/s
+<span class="tui-accent">[+]</span> InfluxDB      <span class="tui-accent"> 397K</span> pts/s
+<span class="tui-accent">[+]</span> TimescaleDB   <span class="tui-accent"> 174K</span> pts/s
+
+<span class="tui-mute">--- 27 testes concluidos ---</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 2 — Agenda ======================== -->
+  <div class="slide" id="slide-2">
+    <div class="slide-label">Agenda</div>
+    <div class="slide-content">
+      <div class="heading" style="margin-bottom: 24px;">Estrutura da apresentacao</div>
+      <hr class="hairline" style="margin-bottom: 0;">
+      <ol class="list-numbered" style="margin-top: 0;">
+        <li>Contexto e motivacao</li>
+        <li>O que sao Bancos de Dados de Series Temporais?</li>
+        <li>Trabalhos relacionados e lacuna de reprodutibilidade</li>
+        <li>Objetivo e questoes de pesquisa</li>
+        <li>Metodologia</li>
+        <li>Resultados</li>
+        <li>Achados principais e conclusao</li>
+        <li>Limitacoes e trabalhos futuros</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 3 — Contexto: Explosao IoT ======================== -->
+  <div class="slide" id="slide-3">
+    <div class="slide-label">Contexto e Motivacao</div>
+    <div class="slide-content">
+      <div class="heading" style="margin-bottom: 24px;">Contexto: Explosao IoT</div>
+      <div class="flex-row" style="flex: 1; gap: 48px;">
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 0;">
+          <hr class="hairline" style="margin-bottom: 0;">
+          <ul class="list" style="margin-top: 0;">
+            <li>Dispositivos IoT crescem exponencialmente: Cisco projeta <strong>500 bilhoes de dispositivos conectados ate 2030</strong></li>
+            <li>Sensores industriais, veiculos, saude, cidades inteligentes: todos geram fluxos continuos de dados temporais</li>
+            <li>O que antes levava 10 min para ser coletado hoje e gerado a cada segundo</li>
+          </ul>
+        </div>
+        <div style="flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+          <div class="img-container">
+            <img src="../../tcc2-latex/figures/pt_br/projecao-iot.png" alt="Projecao IoT" style="max-width: 420px; max-height: 320px; width: auto; height: auto;">
+          </div>
+          <span class="caption">Projecao de crescimento de dispositivos IoT</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 4 — O Problema: Dados Temporais em Escala ======================== -->
+  <div class="slide" id="slide-4">
+    <div class="slide-label">Contexto e Motivacao</div>
+    <div class="slide-content">
+      <div class="heading" style="margin-bottom: 24px;">O Problema: Dados Temporais em Escala</div>
+      <hr class="hairline" style="margin-bottom: 0;">
+      <ul class="list" style="margin-top: 0;">
+        <li>Dados de series temporais: sequencias de medicoes indexadas pelo tempo, geralmente com precisao de milissegundos</li>
+        <li>Bancos relacionais tradicionais sofrem com: indexacao ineficiente, alto custo de armazenamento historico, falta de funcoes temporais nativas</li>
+        <li>BDSTs foram criados especificamente para este problema</li>
+      </ul>
+      <div class="section-gap"></div>
+      <div class="two-col-img">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+          <div class="img-container">
+            <img src="../../tcc2-latex/figures/pt_br/dado_temporal.png" alt="Exemplo de dado temporal" style="max-width: 100%; max-height: 220px; width: auto; height: auto;">
+          </div>
+          <span class="caption">Estrutura de dado temporal</span>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+          <div class="img-container">
+            <img src="../../tcc2-latex/figures/pt_br/registro_temporal.png" alt="Registro temporal" style="max-width: 100%; max-height: 220px; width: auto; height: auto;">
+          </div>
+          <span class="caption">Exemplo de registro temporal</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 5 — Os Tres Bancos Avaliados ======================== -->
+  <div class="slide" id="slide-5">
+    <div class="slide-label">Os Bancos Avaliados</div>
+    <div class="slide-content">
+      <div class="heading" style="margin-bottom: 24px;">Os Tres Bancos Avaliados</div>
+      <div class="table-wrapper" style="margin-bottom: 24px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Banco</th>
+              <th>Arquitetura</th>
+              <th>Destaque</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Apache IoTDB 1.3</strong></td>
+              <td>TsFile colunar + Thrift RPC</td>
+              <td>Criado para IoT industrial (Tsinghua)</td>
+            </tr>
+            <tr>
+              <td><strong>InfluxDB 2.7</strong></td>
+              <td>TSM (Time-Structured Merge Tree) + HTTP</td>
+              <td>Padrao de referencia na literatura</td>
+            </tr>
+            <tr>
+              <td><strong>TimescaleDB (PG 15)</strong></td>
+              <td>Hipertabelas sobre PostgreSQL + WAL</td>
+              <td>SQL completo + ecossistema relacional</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <hr class="hairline" style="margin-bottom: 0;">
+      <ul class="list" style="margin-top: 0;">
+        <li>Cada um representa uma abordagem arquitetural distinta</li>
+        <li>Selecionados por proeminencia nos estudos comparativos recentes</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 6 — Trabalhos Relacionados ======================== -->
+  <div class="slide" id="slide-6">
+    <div class="slide-label">Trabalhos Relacionados</div>
+    <div class="slide-content">
+      <div class="heading" style="margin-bottom: 24px;">Lacuna de Reprodutibilidade</div>
+      <hr class="hairline" style="margin-bottom: 0;">
+      <ul class="list" style="margin-top: 0;">
+        <li>5 estudos comparativos recentes analisados: Naqvi 2017, Shah 2022, Lima 2024, Wang 2023, Pereira 2023</li>
+        <li>Apenas <strong>1 de 5</strong> publicou scripts e configuracoes suficientes para replicacao independente</li>
+        <li>Problemas comuns: configuracoes descritas em prosa vaga, sem versoes fixadas, ferramentas com acesso institucional restrito</li>
+        <li><strong>Sem reprodutibilidade: resultados nao podem ser validados nem comparados entre estudos</strong></li>
+      </ul>
+      <div class="section-gap-lg"></div>
+      <div class="highlight-box">
+        <span class="caption" style="color: var(--ink); font-size: 16px; font-weight: 700;">4 de 5 estudos nao podem ser replicados de forma independente</span>
+        <br>
+        <span class="caption">Esta lacuna motivou a construcao de um benchmark totalmente reprodutivel</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 7 — Objetivo e QP ======================== -->
+  <div class="slide" id="slide-7">
+    <div class="slide-label">Objetivo e Questoes de Pesquisa</div>
+    <div class="slide-content">
+      <div class="heading" style="margin-bottom: 24px;">Objetivo e Questoes de Pesquisa</div>
+      <div class="section-block" style="margin-bottom: 24px;">
+        <div class="section-heading">Objetivo</div>
+        <div class="body-text">Comparacao controlada e reprodutivel dos tres BDSTs em cargas de trabalho IoT realistas</div>
+      </div>
+      <div class="section-block">
+        <div class="section-heading">Questoes respondidas</div>
+        <ul class="list" style="margin-top: 0;">
+          <li>Qual banco tem maior vazao de escrita e como ela escala?</li>
+          <li>Quais sao as latencias de leitura e como crescem com o volume?</li>
+          <li>Quais escolhas arquiteturais explicam as diferencas?</li>
+          <li>As escolhas metodologicas do benchmark afetam os resultados?</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 8 — Metodologia: 9 Testes ======================== -->
+  <div class="slide" id="slide-8">
+    <div class="slide-label">Metodologia</div>
+    <div class="slide-content">
+      <div class="heading" style="margin-bottom: 24px;">Metodologia: 9 Testes x 3 Escalas</div>
+      <div class="flex-row" style="gap: 48px; margin-bottom: 24px;">
+        <div style="flex: 1;">
+          <div class="section-block">
+            <div class="section-heading">Testes de escrita (4)</div>
+            <ul class="list" style="margin-top: 0;">
+              <li>Sequencial</li>
+              <li>Fora de ordem</li>
+              <li>Lote pequeno (B=1)</li>
+              <li>Lote grande (B=1000)</li>
+            </ul>
+          </div>
+        </div>
+        <div style="flex: 1;">
+          <div class="section-block">
+            <div class="section-heading">Testes de leitura (5)</div>
+            <ul class="list" style="margin-top: 0;">
+              <li>Ultimo valor</li>
+              <li>Subamostragem</li>
+              <li>Intervalo de tempo</li>
+              <li>Filtro de valor</li>
+              <li>Leitura geral</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="section-block">
+        <div class="section-heading">Escalas</div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Escala</th>
+                <th>Clientes</th>
+                <th>Dispositivos</th>
+                <th>Sensores</th>
+                <th>Dados totais</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Pequena</strong></td>
+                <td>5</td>
+                <td>10</td>
+                <td>10</td>
+                <td>~50k pts</td>
+              </tr>
+              <tr>
+                <td><strong>Media</strong></td>
+                <td>5</td>
+                <td>10</td>
+                <td>10</td>
+                <td>~250k pts</td>
+              </tr>
+              <tr>
+                <td><strong>Grande</strong></td>
+                <td>10</td>
+                <td>50</td>
+                <td>20</td>
+                <td>~5M pts</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 9 — Metodologia: Infraestrutura ======================== -->
+  <div class="slide" id="slide-9">
+    <div class="slide-label">Metodologia</div>
+    <div class="slide-content">
+      <div class="heading" style="margin-bottom: 24px;">Metodologia: Infraestrutura Reprodutivel</div>
+      <hr class="hairline" style="margin-bottom: 0;">
+      <ul class="list" style="margin-top: 0; margin-bottom: 24px;">
+        <li><strong>Docker Compose</strong> com versoes de imagem fixadas: cada banco sobe e desce isoladamente &mdash; apenas um ativo por vez</li>
+        <li><strong>Python CLI</strong> (<code>benchmark.py</code>): orquestra todos os 27 testes com um unico comando</li>
+        <li><strong>Nix flake</strong>: ambiente declarativo e reprodutivel (Java 17, Maven, Python 3, Docker)</li>
+        <li>Disponivel em: <code>github.com/LuizFerK/iot-benchrunner</code></li>
+      </ul>
+      <div class="tui-mockup">
+<span class="tui-mute">$ </span>python3 benchmark.py --scale large
+
+<span class="tui-accent">[+]</span> Iniciando 27 testes...
+<span class="tui-accent">[+]</span> IoTDB  (escrita/leitura)  <span class="tui-accent">OK</span>
+<span class="tui-accent">[+]</span> InfluxDB (escrita/leitura) <span class="tui-accent">OK</span>
+<span class="tui-accent">[+]</span> TimescaleDB (escrita/leitura) <span class="tui-accent">OK</span>
+
+<span class="tui-mute">Resultados em: results/large/</span></div>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 10 — Resultados: Vazao de Escrita ======================== -->
+  <div class="slide" id="slide-10">
+    <div class="slide-label">Resultados</div>
+    <div class="slide-content">
+      <div class="heading" style="margin-bottom: 16px;">Resultados: Vazao de Escrita</div>
+      <div class="flex-row" style="flex: 1; gap: 40px; align-items: flex-start;">
+        <div style="flex: 0 0 220px; display: flex; flex-direction: column; gap: 0;">
+          <div class="section-block">
+            <div class="section-heading">Escala pequena (ajustada)</div>
+            <ul class="list" style="margin-top: 0;">
+              <li><strong>IoTDB:</strong> 2,2 M pts/s</li>
+              <li><strong>InfluxDB:</strong> 397 K pts/s</li>
+              <li><strong>TimescaleDB:</strong> 174 K pts/s</li>
+            </ul>
+          </div>
+          <div class="section-gap"></div>
+          <div class="section-block">
+            <div class="section-heading">Crescimento com o volume</div>
+            <div class="body-text" style="font-size: 14px; color: var(--mute);">Ver grafico de escalonamento</div>
+          </div>
+        </div>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 16px;">
+          <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 6px;">
+            <div class="img-container">
+              <img src="../../tcc2-latex/figures/pt_br/chart_write_throughput_small.png" alt="Vazao de escrita - escala pequena" style="max-width: 480px; max-height: 200px; width: auto; height: auto;">
+            </div>
+            <span class="caption">Fig. 1 &mdash; Vazao de escrita, escala pequena</span>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 6px;">
+            <div class="img-container">
+              <img src="../../tcc2-latex/figures/pt_br/chart_write_scaling.png" alt="Escalonamento de escrita" style="max-width: 480px; max-height: 200px; width: auto; height: auto;">
+            </div>
+            <span class="caption">Fig. 2 &mdash; Escalonamento da vazao de escrita</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 11 — Escrita Fora de Ordem ======================== -->
+  <div class="slide" id="slide-11">
+    <div class="slide-label">Resultados</div>
+    <div class="slide-content">
+      <div class="heading" style="margin-bottom: 16px;">Resultados: Escrita Fora de Ordem</div>
+      <div class="flex-row" style="flex: 1; gap: 40px; align-items: flex-start;">
+        <div style="flex: 0 0 260px; display: flex; flex-direction: column; gap: 0;">
+          <hr class="hairline" style="margin-bottom: 0;">
+          <div class="body-text" style="padding: 12px 0; font-size: 14px; color: var(--mute);">20% dos dados chegam com atraso (distribuicao de Poisson)</div>
+          <hr class="hairline">
+          <ul class="list" style="margin-top: 0;">
+            <li><strong>IoTDB:</strong> penalidade de -13% &mdash; melhor tolerancia absoluta e relativa</li>
+            <li><strong>InfluxDB:</strong> penalidade de -36% &mdash; TSM sofre com reescrita de segmentos</li>
+            <li><strong>TimescaleDB:</strong> penalidade de -8% &mdash; WAL absorve bem a reordenacao</li>
+          </ul>
+        </div>
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
+          <div class="img-container">
+            <img src="../../tcc2-latex/figures/pt_br/chart_ooo_degradation.png" alt="Degradacao fora de ordem" style="max-width: 520px; max-height: 360px; width: auto; height: auto;">
+          </div>
+          <span class="caption">Fig. 3 &mdash; Degradacao de desempenho fora de ordem</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 12 — Leitura: Ultimo Valor ======================== -->
+  <div class="slide" id="slide-12">
+    <div class="slide-label">Resultados</div>
+    <div class="slide-content">
+      <div class="heading" style="margin-bottom: 16px;">Resultados: Leitura &mdash; Ultimo Valor</div>
+      <div class="flex-row" style="flex: 1; gap: 40px; align-items: flex-start;">
+        <div style="flex: 0 0 260px; display: flex; flex-direction: column; gap: 0;">
+          <hr class="hairline" style="margin-bottom: 0;">
+          <div class="body-text" style="padding: 12px 0; font-size: 14px; color: var(--mute);">Padrao critico em monitoramento IoT: "qual e a leitura atual do sensor X?"</div>
+          <hr class="hairline">
+          <ul class="list" style="margin-top: 0;">
+            <li><strong>TimescaleDB:</strong> 0,38 ms (escala pequena) &mdash; indice reverso do PostgreSQL</li>
+            <li><strong>IoTDB:</strong> 1,24 ms &mdash; cresce moderadamente</li>
+            <li><strong>InfluxDB:</strong> 9,24 ms &mdash; cresce linearmente com os arquivos TSM armazenados (sem atalho de ultimo valor em memoria)</li>
+          </ul>
+        </div>
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
+          <div class="img-container">
+            <img src="../../tcc2-latex/figures/pt_br/chart_latest_point_scaling.png" alt="Escalonamento de ultimo valor" style="max-width: 520px; max-height: 360px; width: auto; height: auto;">
+          </div>
+          <span class="caption">Fig. 4 &mdash; Escalonamento de latencia do ultimo valor</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 13 — Filtro de Valor ======================== -->
+  <div class="slide" id="slide-13">
+    <div class="slide-label">Resultados</div>
+    <div class="slide-content">
+      <div class="heading" style="margin-bottom: 16px;">Resultados: Filtro de Valor</div>
+      <div class="flex-row" style="flex: 1; gap: 40px; align-items: flex-start;">
+        <div style="flex: 0 0 260px; display: flex; flex-direction: column; gap: 0;">
+          <hr class="hairline" style="margin-bottom: 0;">
+          <div class="body-text" style="padding: 12px 0; font-size: 14px; color: var(--mute);">Padrao de alerta por limiar: "leituras acima de X nos ultimos N dias"</div>
+          <hr class="hairline">
+          <ul class="list" style="margin-top: 0;">
+            <li><strong>IoTDB:</strong> 3,72 ms (pequena) &rarr; 19,4 ms (grande) &mdash; crescimento <strong>sublinear</strong> gracas as estatisticas de min/max por bloco (eliminacao de blocos)</li>
+            <li><strong>InfluxDB:</strong> 71 ms &rarr; 497 ms</li>
+            <li><strong>TimescaleDB:</strong> 24 ms &rarr; 510 ms &mdash; cresce quase linearmente</li>
+          </ul>
+        </div>
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
+          <div class="img-container">
+            <img src="../../tcc2-latex/figures/pt_br/chart_value_filter_scaling.png" alt="Escalonamento de filtro de valor" style="max-width: 520px; max-height: 360px; width: auto; height: auto;">
+          </div>
+          <span class="caption">Fig. 5 &mdash; Escalonamento de latencia do filtro de valor</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 14 — Footprint de Memoria ======================== -->
+  <div class="slide" id="slide-14">
+    <div class="slide-label">Resultados</div>
+    <div class="slide-content">
+      <div class="heading" style="margin-bottom: 16px;">Resultados: Footprint de Memoria</div>
+      <div class="flex-row" style="flex: 1; gap: 40px; align-items: flex-start;">
+        <div style="flex: 0 0 260px; display: flex; flex-direction: column; gap: 0;">
+          <hr class="hairline" style="margin-bottom: 0;">
+          <ul class="list" style="margin-top: 0;">
+            <li><strong>IoTDB:</strong> inicia em ~1,7 GB, estabiliza em ~10-15 GB &mdash; heap da JVM + buffers em memoria</li>
+            <li><strong>InfluxDB:</strong> ~190 MB inicial, ~900 MB estavel &mdash; mais eficiente</li>
+            <li><strong>TimescaleDB:</strong> ~239 MB inicial, ~1,8 GB estavel &mdash; shared_buffers do PostgreSQL</li>
+          </ul>
+        </div>
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
+          <div class="img-container">
+            <img src="../../tcc2-latex/figures/pt_br/chart_memory_scaling.png" alt="Escalonamento de memoria" style="max-width: 520px; max-height: 360px; width: auto; height: auto;">
+          </div>
+          <span class="caption">Fig. 6 &mdash; Escalonamento do consumo de memoria</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 15 — Artefatos de Benchmark ======================== -->
+  <div class="slide" id="slide-15">
+    <div class="slide-label">Descoberta Metodologica</div>
+    <div class="slide-content">
+      <div class="heading" style="margin-bottom: 16px;">Descoberta Metodologica: Artefatos de Benchmark</div>
+      <div class="body-text" style="margin-bottom: 16px; font-weight: 700; color: var(--ink);">Dois resultados das execucoes iniciais foram revertidos por reexecucoes isoladas:</div>
+      <div class="table-wrapper" style="margin-bottom: 24px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Resultado inicial</th>
+              <th>Reexecucao isolada</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Penalidade fora de ordem TimescaleDB (grande): <strong>23%</strong></td>
+              <td><strong>2,7%</strong> &mdash; artefato de despejo de cache</td>
+            </tr>
+            <tr>
+              <td>Saturacao de CPU TimescaleDB: <strong>97,7%</strong></td>
+              <td><strong>77,4%</strong> &mdash; competicao de CPU compartilhada</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <hr class="hairline" style="margin-bottom: 8px;">
+      <div class="body-text" style="margin-bottom: 16px; font-size: 14px; color: var(--mute);">Medicoes de memoria mudaram em <strong style="color: var(--ink);">uma ordem de magnitude</strong> ao corrigir o ciclo de vida compartilhado dos conteineres</div>
+      <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 6px;">
+        <div class="img-container">
+          <img src="../../tcc2-latex/figures/pt_br/chart_read_saturation_comparison.png" alt="Comparacao leitura: recursos compartilhados vs. isolado" style="max-width: 520px; max-height: 200px; width: auto; height: auto;">
+        </div>
+        <span class="caption">Fig. 7 &mdash; Comparacao: recursos compartilhados vs. isolado</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 16 — Heatmap de Latencia ======================== -->
+  <div class="slide" id="slide-16">
+    <div class="slide-label">Resultados</div>
+    <div class="slide-content">
+      <div class="heading" style="margin-bottom: 16px;">Visao Geral: Heatmap de Latencia</div>
+      <hr class="hairline" style="margin-bottom: 8px;">
+      <div class="body-text" style="margin-bottom: 24px;">Comparacao multidimensional de todos os testes de leitura nos tres bancos</div>
+      <div style="flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
+        <div class="img-container">
+          <img src="../../tcc2-latex/figures/pt_br/chart_heatmap_latency.png" alt="Heatmap de latencia" style="max-width: 720px; max-height: 380px; width: auto; height: auto;">
+        </div>
+        <span class="caption">Fig. 8 &mdash; Heatmap de latencia por banco e tipo de teste</span>
+      </div>
+      <div class="section-gap"></div>
+      <hr class="hairline" style="margin-bottom: 0;">
+      <ul class="list" style="margin-top: 0;">
+        <li>Nenhum banco domina todas as dimensoes</li>
+        <li>Padroes de forca e fraqueza emergem claramente</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 17 — Tres Achados Principais ======================== -->
+  <div class="slide" id="slide-17">
+    <div class="slide-label">Achados Principais e Conclusao</div>
+    <div class="slide-content">
+      <div class="heading" style="margin-bottom: 24px;">Os Tres Achados Principais</div>
+      <div class="finding-block">
+        <div class="section-heading">[+] 1. Nenhum banco domina em todas as cargas de trabalho</div>
+        <div class="body-text" style="margin-top: 8px; font-size: 14px;">IoTDB lidera escrita; TimescaleDB lidera subamostragem e ultimo valor; InfluxDB equilibra</div>
+      </div>
+      <div class="finding-block">
+        <div class="section-heading">[+] 2. Escolhas arquiteturais determinam o comportamento de escalonamento, nao o ajuste</div>
+        <ul class="sublist" style="margin-top: 8px;">
+          <li>Vantagem do filtro de valor do IoTDB cresce com o volume (poda de blocos)</li>
+          <li>Latencia de ultimo valor do InfluxDB cresce linearmente (sem atalho TSM)</li>
+          <li>Subamostragem do TimescaleDB e genuinamente de latencia constante (janela fixa)</li>
+        </ul>
+      </div>
+      <div class="finding-block">
+        <div class="section-heading">[+] 3. A metodologia afeta criticamente a validade do benchmark</div>
+        <ul class="sublist" style="margin-top: 8px;">
+          <li>Ambientes com recursos compartilhados produzem resultados enganosos</li>
+          <li>Reexecucoes isoladas sao obrigatorias antes de apresentar propriedades arquiteturais</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 18 — Guia de Selecao ======================== -->
+  <div class="slide" id="slide-18">
+    <div class="slide-label">Achados Principais e Conclusao</div>
+    <div class="slide-content">
+      <div class="heading" style="margin-bottom: 24px;">Guia de Selecao por Carga de Trabalho</div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Cenario</th>
+              <th>Banco recomendado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Pipeline IoT dominado por escrita com RAM suficiente</td>
+              <td><strong>IoTDB</strong></td>
+            </tr>
+            <tr>
+              <td>Analise com consultas de painel em janelas de tempo recentes</td>
+              <td><strong>TimescaleDB</strong></td>
+            </tr>
+            <tr>
+              <td>Alertas por limiar sobre historico crescente</td>
+              <td><strong>IoTDB</strong> (filtro sublinear)</td>
+            </tr>
+            <tr>
+              <td>Carga mista, memoria restrita, volume moderado</td>
+              <td><strong>InfluxDB</strong></td>
+            </tr>
+            <tr>
+              <td>Necessidade de SQL, joins relacionais, ecossistema PostgreSQL</td>
+              <td><strong>TimescaleDB</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 19 — Limitacoes e Trabalhos Futuros ======================== -->
+  <div class="slide" id="slide-19">
+    <div class="slide-label">Limitacoes e Trabalhos Futuros</div>
+    <div class="slide-content">
+      <div class="heading" style="margin-bottom: 24px;">Limitacoes e Trabalhos Futuros</div>
+      <div class="two-col" style="gap: 48px;">
+        <div>
+          <div class="section-block">
+            <div class="section-heading">Limitacoes</div>
+            <ul class="list" style="margin-top: 0;">
+              <li>Implantacao em no unico (sem latencia real de rede)</li>
+              <li>Testes de leitura sequenciais (cache de paginas aquecido)</li>
+              <li>Durabilidade diferida do IoTDB (reconhecimento em memoria antes do disco)</li>
+              <li>Aquecimento da JVM (benchmarks curtos subestimam o IoTDB)</li>
+            </ul>
+          </div>
+        </div>
+        <div>
+          <div class="section-block">
+            <div class="section-heading">Trabalhos futuros</div>
+            <ul class="list" style="margin-top: 0;">
+              <li>Implantacoes distribuidas (IoTDB cluster, InfluxDB Clustered, TimescaleDB + Citus)</li>
+              <li>Datasets do mundo real (telemetria veicular, redes eletricas, escala de bilhoes de pontos)</li>
+              <li>Overhead de durabilidade e alta disponibilidade (replicacao, failover)</li>
+              <li>Evolucao de versoes (IoTDB 2.x, InfluxDB 3.0 com motor colunar Arrow/DataFusion)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================== SLIDE 20 — Obrigado ======================== -->
+  <div class="slide" id="slide-20">
+    <div class="slide-label">Fim da Apresentacao</div>
+    <div class="slide-content">
+      <div class="display-md" style="margin-bottom: 32px;">Obrigado</div>
+      <hr class="hairline" style="margin-bottom: 24px;">
+      <div class="body-text" style="font-size: 20px; font-weight: 700; color: var(--ink); max-width: 680px; line-height: 1.4; margin-bottom: 32px;">Um Benchmark Reprodutivel do Apache IoTDB, InfluxDB e TimescaleDB para Cargas de Trabalho IoT</div>
+      <div class="body-text" style="margin-bottom: 8px; color: var(--mute);">Luiz Fernando Klein &mdash; UFFS, 2026</div>
+      <div class="body-text" style="margin-bottom: 32px;">Repositorio publico: <code>github.com/LuizFerK/iot-benchrunner</code></div>
+      <hr class="hairline" style="margin-bottom: 0;">
+      <ul class="list" style="margin-top: 0; margin-bottom: 48px;">
+        <li>Scripts de orquestracao, configuracoes Docker, ambiente Nix e dados de resultados disponiveis para replicacao</li>
+      </ul>
+      <div class="tui-mockup" style="display: inline-block; min-width: 340px;">
+<span class="tui-accent">[?]</span> Perguntas?
+
+<span class="tui-mute">github.com/LuizFerK/iot-benchrunner</span></div>
+    </div>
+  </div>
+
+</div><!-- /deck -->
+
+<!-- Navigation -->
+<div class="nav">
+  <button class="nav-btn" id="btn-prev" onclick="navigate(-1)" disabled>&larr;</button>
+  <button class="nav-btn" id="btn-next" onclick="navigate(1)">&rarr;</button>
+</div>
+<div class="slide-counter" id="counter">1 / 20</div>
+
+<script>
+  const TOTAL = 20;
+  let current = 1;
+
+  function showSlide(n) {
+    const prev = document.getElementById('slide-' + current);
+    if (prev) {
+      prev.classList.remove('active');
+    }
+    current = Math.max(1, Math.min(TOTAL, n));
+    const next = document.getElementById('slide-' + current);
+    if (next) {
+      next.classList.add('active');
+    }
+    document.getElementById('counter').textContent = current + ' / ' + TOTAL;
+    document.getElementById('btn-prev').disabled = current <= 1;
+    document.getElementById('btn-next').disabled = current >= TOTAL;
+  }
+
+  function navigate(dir) {
+    showSlide(current + dir);
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === 'Space') {
+      e.preventDefault();
+      navigate(1);
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      navigate(-1);
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      showSlide(1);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      showSlide(TOTAL);
+    }
+  });
+
+  // Initialize
+  showSlide(1);
+</script>
+
+</body>
+</html>

@@ -1,5 +1,7 @@
+.claude
 .nix-built-iot-benchmark
 **/__pycache__
 tcc2-latex.zip
 thesis-en-us.pdf
 thesis-pt-br.pdf
+presentation/pdfs
